@@ -1,0 +1,19 @@
+{
+  "sole_authorizing_party": "Tucker Layne Martin",
+  "org": "StellarNet LLC",
+  "auth_mechanism": "SHA-256(salt + PIN), verified by Tucker only",
+  "pin_hash": "c3f48431613381808adb60676c4cd931764231ce6d3f7e7b1f50333907e912de",
+  "pin_salt": "oeql-owner-auth-v1",
+  "pin_hash_algo": "sha256",
+  "note": "PIN was posted in chat 2026-08-10 \u2014 MUST BE ROTATED after this session",
+  "actions_requiring_auth": [
+    "any sale, license, assignment, or IP transfer",
+    "public release of confidential materials",
+    "acquisition process initiation",
+    "mainnet contract deployment",
+    "binding external commitments",
+    "treasury disbursement",
+    "lab partnership MOUs"
+  ],
+  "created": "2026-08-11T04:40:25Z"
+}

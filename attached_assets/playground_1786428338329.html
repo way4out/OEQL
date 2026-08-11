@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OEQL — Playground</title>
+<style>
+  :root{
+    --bg:#07100d;
+    --panel:#0c1a15;
+    --line:#173026;
+    --phosphor:#5ffbc0;
+    --phosphor-dim:#2b8f6c;
+    --amber:#ffb454;
+    --ink:#cfe9dd;
+    --ink-dim:#6f9686;
+    --danger:#ff6a6a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:"IBM Plex Mono","JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;}
+  body{background-image:
+      linear-gradient(rgba(95,251,192,0.028) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(95,251,192,0.028) 1px, transparent 1px);
+    background-size:28px 28px;}
+
+  header{padding:28px 32px 18px; border-bottom:1px solid var(--line);}
+  .eyebrow{font-size:11px; letter-spacing:.22em; color:var(--phosphor-dim); text-transform:uppercase;}
+  h1{margin:6px 0 4px; font-size:26px; font-weight:600; color:var(--phosphor); letter-spacing:.01em;}
+  .attribution{font-size:12px; color:var(--amber); letter-spacing:.05em; margin-top:2px;}
+  .sub{color:var(--ink-dim); font-size:13px; margin-top:8px; max-width:62ch; line-height:1.5;}
+
+  main{display:grid; grid-template-columns:1fr 1fr; gap:0; min-height:calc(100vh - 140px);}
+  @media (max-width:900px){ main{grid-template-columns:1fr;} }
+
+  .pane{padding:24px 32px; border-right:1px solid var(--line);}
+  .pane:last-child{border-right:none;}
+
+  label.field-label{display:block; font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--phosphor-dim); margin-bottom:8px;}
+
+  textarea{width:100%; height:280px; background:#050d0a; color:var(--phosphor); border:1px solid var(--line);
+    padding:14px; font-family:inherit; font-size:13.5px; line-height:1.65; resize:vertical; outline:none;}
+  textarea:focus{border-color:var(--phosphor-dim);}
+
+  .btn-row{display:flex; gap:10px; margin-top:14px; align-items:center; flex-wrap:wrap;}
+  button{background:transparent; color:var(--phosphor); border:1px solid var(--phosphor-dim);
+    padding:9px 18px; font-family:inherit; font-size:12.5px; letter-spacing:.08em; text-transform:uppercase;
+    cursor:pointer; transition:all .15s ease;}
+  button:hover{background:rgba(95,251,192,0.09); border-color:var(--phosphor);}
+  button.secondary{color:var(--ink-dim); border-color:var(--line);}
+  button.secondary:hover{color:var(--ink); border-color:var(--ink-dim); background:transparent;}
+  select{background:#050d0a; color:var(--ink); border:1px solid var(--line); padding:8px 10px; font-family:inherit; font-size:12.5px;}
+
+  .status{font-size:12px; margin-top:10px; min-height:18px; letter-spacing:.02em;}
+  .status.ok{color:var(--phosphor);}
+  .status.err{color:var(--danger);}
+
+  .result-block{margin-top:22px;}
+  .result-block h2{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--phosphor-dim);
+    margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--line);}
+
+  table.state-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  table.state-table th{text-align:left; color:var(--ink-dim); font-weight:500; padding:4px 8px; font-size:10.5px;
+    text-transform:uppercase; letter-spacing:.08em;}
+  table.state-table td{padding:4px 8px; border-top:1px solid var(--line); white-space:nowrap;}
+  .bar-cell{width:100%;}
+  .bar-track{background:#0a1712; height:14px; position:relative; overflow:hidden;}
+  .bar-fill{background:linear-gradient(90deg, var(--phosphor-dim), var(--phosphor)); height:100%;}
+  .amp{color:var(--ink-dim); font-size:11px;}
+
+  footer{padding:16px 32px; border-top:1px solid var(--line); color:var(--ink-dim); font-size:11px;
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;}
+  a{color:var(--phosphor-dim);}
+  .meta-row{display:flex; gap:22px; margin-top:16px; font-size:11.5px; color:var(--ink-dim); flex-wrap:wrap;}
+  .meta-row b{color:var(--ink);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">OEQL — Open-Ended Quantum Liberty &amp; Engineering Ecosystem</div>
+  <h1>Circuit Playground</h1>
+  <div class="attribution">All accreditation: 4 GOD &amp; 4 huMan</div>
+  <div class="sub">Write a circuit in QF-IR text form, run it on the client-side statevector simulator
+    (JavaScript port of the reference Python engine, spec §5/§9), and inspect exact amplitudes and
+    measurement probabilities. Nothing here leaves your browser.</div>
+</header>
+
+<main>
+  <div class="pane">
+    <label class="field-label">Circuit source</label>
+    <textarea id="src" spellcheck="false"></textarea>
+    <div class="btn-row">
+      <button id="runBtn">Run ▸</button>
+      <select id="examples">
+        <option value="">— load example —</option>
+        <option value="bell">Bell state</option>
+        <option value="ghz3">GHZ (3 qubit)</option>
+        <option value="ghz5">GHZ (5 qubit)</option>
+        <option value="qft3">QFT (3 qubit)</option>
+      </select>
+      <button class="secondary" id="clearBtn">Clear</button>
+    </div>
+    <div id="status" class="status"></div>
+
+    <div class="result-block">
+      <h2>Grammar reference</h2>
+      <div style="font-size:12px; color:var(--ink-dim); line-height:1.8;">
+        qubits N&nbsp;&nbsp;·&nbsp;&nbsp;h Q&nbsp;&nbsp;·&nbsp;&nbsp;x Q&nbsp;&nbsp;·&nbsp;&nbsp;y Q&nbsp;&nbsp;·&nbsp;&nbsp;z Q&nbsp;&nbsp;·&nbsp;&nbsp;s Q&nbsp;&nbsp;·&nbsp;&nbsp;t Q<br>
+        rx Q θ&nbsp;&nbsp;·&nbsp;&nbsp;ry Q θ&nbsp;&nbsp;·&nbsp;&nbsp;rz Q θ<br>
+        cx C T&nbsp;&nbsp;·&nbsp;&nbsp;cz C T&nbsp;&nbsp;·&nbsp;&nbsp;swap A B&nbsp;&nbsp;·&nbsp;&nbsp;cp C T θ<br>
+        <span style="color:var(--ink-dim)"># comments allowed; one instruction per line</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="pane">
+    <div class="result-block" style="margin-top:0;">
+      <h2>Measurement probabilities</h2>
+      <table class="state-table" id="probTable"><tbody></tbody></table>
+    </div>
+    <div class="meta-row" id="metaRow"></div>
+  </div>
+</main>
+
+<footer>
+  <div>OEQL — Apache-2.0 — reference implementation, spec §15</div>
+  <div>Accreditation: 4 GOD &amp; 4 huMan</div>
+</footer>
+
+<script>
+// ---------------------------------------------------------------------
+// Quantum Foundry — client-side statevector engine (JS port of core/statevector.py)
+// Attribution: 4 GOD & 4 huMan
+// ---------------------------------------------------------------------
+class Complex {
+  constructor(re=0, im=0){ this.re=re; this.im=im; }
+  static add(a,b){ return new Complex(a.re+b.re, a.im+b.im); }
+  static mul(a,b){ return new Complex(a.re*b.re - a.im*b.im, a.re*b.im + a.im*b.re); }
+  static scale(a,s){ return new Complex(a.re*s, a.im*s); }
+  abs2(){ return this.re*this.re + this.im*this.im; }
+}
+
+function mat1(name, theta){
+  const c = (t)=>Math.cos(t/2), s = (t)=>Math.sin(t/2);
+  switch(name){
+    case 'id': return [[new Complex(1),new Complex(0)],[new Complex(0),new Complex(1)]];
+    case 'x':  return [[new Complex(0),new Complex(1)],[new Complex(1),new Complex(0)]];
+    case 'y':  return [[new Complex(0),new Complex(0,-1)],[new Complex(0,1),new Complex(0)]];
+    case 'z':  return [[new Complex(1),new Complex(0)],[new Complex(0),new Complex(-1)]];
+    case 'h':  { const k=1/Math.sqrt(2); return [[new Complex(k),new Complex(k)],[new Complex(k),new Complex(-k)]]; }
+    case 's':  return [[new Complex(1),new Complex(0)],[new Complex(0),new Complex(0,1)]];
+    case 't':  return [[new Complex(1),new Complex(0)],[new Complex(0),new Complex(Math.cos(Math.PI/4),Math.sin(Math.PI/4))]];
+    case 'rx': return [[new Complex(c(theta),0),new Complex(0,-s(theta))],[new Complex(0,-s(theta)),new Complex(c(theta),0)]];
+    case 'ry': return [[new Complex(c(theta),0),new Complex(-s(theta),0)],[new Complex(s(theta),0),new Complex(c(theta),0)]];
+    case 'rz': return [[new Complex(Math.cos(-theta/2),Math.sin(-theta/2)),new Complex(0)],[new Complex(0),new Complex(Math.cos(theta/2),Math.sin(theta/2))]];
+    default: throw new Error('unknown 1q gate '+name);
+  }
+}
+
+class Sim {
+  constructor(n){
+    this.n = n;
+    this.dim = 1<<n;
+    this.state = new Array(this.dim).fill(0).map(()=>new Complex(0,0));
+    this.state[0] = new Complex(1,0);
+  }
+  apply1(name, q, theta){
+    const m = mat1(name, theta);
+    const newState = this.state.slice();
+    const bit = 1<<q;
+    for(let i=0;i<this.dim;i++){
+      if((i & bit) === 0){
+        const i0=i, i1=i|bit;
+        const a0=this.state[i0], a1=this.state[i1];
+        newState[i0] = Complex.add(Complex.mul(m[0][0],a0), Complex.mul(m[0][1],a1));
+        newState[i1] = Complex.add(Complex.mul(m[1][0],a0), Complex.mul(m[1][1],a1));
+      }
+    }
+    this.state = newState;
+  }
+  applyCX(c,t){
+    const newState = this.state.slice();
+    const cb=1<<c, tb=1<<t;
+    for(let i=0;i<this.dim;i++){
+      if((i & cb) !== 0){
+        newState[i] = this.state[i ^ tb];
+      }
+    }
+    this.state = newState;
+  }
+  applyCZ(c,t){
+    const cb=1<<c, tb=1<<t;
+    for(let i=0;i<this.dim;i++){
+      if((i&cb)!==0 && (i&tb)!==0) this.state[i] = Complex.scale(this.state[i], -1);
+    }
+  }
+  applyCP(c,t,theta){
+    const cb=1<<c, tb=1<<t;
+    const ph = new Complex(Math.cos(theta), Math.sin(theta));
+    for(let i=0;i<this.dim;i++){
+      if((i&cb)!==0 && (i&tb)!==0) this.state[i] = Complex.mul(this.state[i], ph);
+    }
+  }
+  applySwap(a,b){
+    const ab=1<<a, bb=1<<b;
+    const newState = this.state.slice();
+    for(let i=0;i<this.dim;i++){
+      const abit=(i&ab)!==0, bbit=(i&bb)!==0;
+      if(abit !== bbit){
+        const j = i ^ ab ^ bb;
+        newState[i] = this.state[j];
+      }
+    }
+    this.state = newState;
+  }
+}
+
+function parseAndRun(src){
+  const lines = src.split('\n');
+  let n = null, sim = null;
+  const ops = [];
+  for(let ln=0; ln<lines.length; ln++){
+    let line = lines[ln].split('#')[0].trim();
+    if(!line) continue;
+    const parts = line.split(/\s+/);
+    const op = parts[0].toLowerCase();
+    if(op === 'qubits'){
+      n = parseInt(parts[1]); sim = new Sim(n); continue;
+    }
+    if(sim === null) throw new Error(`line ${ln+1}: 'qubits N' must come first`);
+    if(['h','x','y','z','s','t'].includes(op)){
+      sim.apply1(op, parseInt(parts[1]));
+    } else if(['rx','ry','rz'].includes(op)){
+      sim.apply1(op, parseInt(parts[1]), parseFloat(parts[2]));
+    } else if(op === 'cx'){
+      sim.applyCX(parseInt(parts[1]), parseInt(parts[2]));
+    } else if(op === 'cz'){
+      sim.applyCZ(parseInt(parts[1]), parseInt(parts[2]));
+    } else if(op === 'swap'){
+      sim.applySwap(parseInt(parts[1]), parseInt(parts[2]));
+    } else if(op === 'cp'){
+      sim.applyCP(parseInt(parts[1]), parseInt(parts[2]), parseFloat(parts[3]));
+    } else {
+      throw new Error(`line ${ln+1}: unrecognized instruction '${op}'`);
+    }
+    ops.push(op);
+  }
+  if(sim === null) throw new Error("empty program: missing 'qubits N'");
+  return {sim, n, opCount: ops.length};
+}
+
+const EXAMPLES = {
+  bell: "qubits 2\nh 0\ncx 0 1\n",
+  ghz3: "qubits 3\nh 0\ncx 0 1\ncx 1 2\n",
+  ghz5: "qubits 5\nh 0\ncx 0 1\ncx 1 2\ncx 2 3\ncx 3 4\n",
+  qft3: "qubits 3\nh 0\ncp 1 0 1.5707963267948966\ncp 2 0 0.7853981633974483\nh 1\ncp 2 1 1.5707963267948966\nh 2\nswap 0 2\n"
+};
+
+const srcEl = document.getElementById('src');
+const statusEl = document.getElementById('status');
+const probTableBody = document.querySelector('#probTable tbody');
+const metaRow = document.getElementById('metaRow');
+
+document.getElementById('examples').addEventListener('change', (e)=>{
+  if(e.target.value) srcEl.value = EXAMPLES[e.target.value];
+});
+document.getElementById('clearBtn').addEventListener('click', ()=>{ srcEl.value=''; statusEl.textContent=''; probTableBody.innerHTML=''; metaRow.innerHTML=''; });
+
+document.getElementById('runBtn').addEventListener('click', ()=>{
+  const t0 = performance.now();
+  try{
+    const {sim, n, opCount} = parseAndRun(srcEl.value);
+    const t1 = performance.now();
+    const probs = sim.state.map(c=>c.abs2());
+    const totalProb = probs.reduce((a,b)=>a+b,0);
+
+    probTableBody.innerHTML = '';
+    for(let i=0;i<sim.dim;i++){
+      const bits = i.toString(2).padStart(n,'0').split('').reverse().join('');
+      const p = probs[i];
+      const amp = sim.state[i];
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>|${bits}⟩</td>
+        <td>${(p*100).toFixed(2)}%</td>
+        <td class="bar-cell"><div class="bar-track"><div class="bar-fill" style="width:${(p*100).toFixed(2)}%"></div></div></td>
+        <td class="amp">${amp.re.toFixed(4)} ${amp.im>=0?'+':'-'} ${Math.abs(amp.im).toFixed(4)}i</td>`;
+      probTableBody.appendChild(tr);
+    }
+    statusEl.className = 'status ok';
+    statusEl.textContent = `OK — ${n} qubits, ${opCount} ops, executed in ${(t1-t0).toFixed(2)}ms`;
+    metaRow.innerHTML = `<div><b>Total probability</b> ${totalProb.toFixed(9)} (unitarity check)</div>
+                          <div><b>Hilbert space dim</b> ${sim.dim}</div>`;
+  } catch(err){
+    statusEl.className = 'status err';
+    statusEl.textContent = 'ERROR — ' + err.message;
+    probTableBody.innerHTML = '';
+    metaRow.innerHTML = '';
+  }
+});
+
+srcEl.value = EXAMPLES.bell;
+</script>
+</body>
+</html>

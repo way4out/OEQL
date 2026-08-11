@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OEQL — Open-Ended Quantum Liberty</title>
+<style>
+:root {
+  --bg: #050e09;
+  --phosphor: #5ffbc0;
+  --phosphor-dim: #2b8f6c;
+  --amber: #ffb454;
+  --ink: #cfe9dd;
+  --ink-dim: #6f9686;
+  --line: #122218;
+  --panel: #0a1812;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "IBM Plex Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+  overflow-x: hidden;
+}
+
+/* animated grid background */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(95,251,192,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(95,251,192,0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  animation: gridPulse 8s ease-in-out infinite;
+}
+@keyframes gridPulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* scanning line effect */
+body::after {
+  content: '';
+  position: fixed; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(95,251,192,0.4), transparent);
+  animation: scan 6s linear infinite;
+  z-index: 0; pointer-events: none;
+}
+@keyframes scan { 0% { top: -2px; } 100% { top: 100vh; } }
+
+/* ---- LANDING SCREEN ---- */
+#landing {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.sigil {
+  width: 120px; height: 120px;
+  margin-bottom: 40px;
+  position: relative;
+}
+.sigil svg { width: 100%; height: 100%; }
+.orbit { animation: spin 12s linear infinite; transform-origin: 60px 60px; }
+.orbit2 { animation: spin 8s linear infinite reverse; transform-origin: 60px 60px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.eyebrow {
+  font-size: 11px; letter-spacing: 0.26em; text-transform: uppercase;
+  color: var(--phosphor-dim); margin-bottom: 16px;
+}
+h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 700; letter-spacing: 0.02em;
+  color: var(--phosphor);
+  margin-bottom: 8px;
+  text-shadow: 0 0 40px rgba(95,251,192,0.3);
+}
+.attr {
+  font-size: 13px; color: var(--amber);
+  letter-spacing: 0.08em; margin-bottom: 32px;
+}
+.tagline {
+  font-size: clamp(13px, 2vw, 16px);
+  color: var(--ink-dim); line-height: 1.7;
+  max-width: 540px; margin: 0 auto 48px;
+}
+.tagline b { color: var(--ink); font-weight: 500; }
+
+/* the [Enter] button */
+#enterBtn {
+  position: relative; overflow: hidden;
+  display: inline-flex; align-items: center; gap: 12px;
+  background: transparent;
+  border: 1px solid var(--phosphor);
+  color: var(--phosphor);
+  font-family: inherit; font-size: 16px;
+  font-weight: 600; letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 18px 48px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+#enterBtn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(95,251,192,0.15), rgba(95,251,192,0.05));
+  opacity: 0; transition: opacity 0.2s;
+}
+#enterBtn:hover::before { opacity: 1; }
+#enterBtn:hover {
+  box-shadow: 0 0 32px rgba(95,251,192,0.25), inset 0 0 32px rgba(95,251,192,0.05);
+  letter-spacing: 0.18em;
+}
+#enterBtn:active { transform: scale(0.98); }
+.btn-arrow { font-size: 20px; transition: transform 0.2s; }
+#enterBtn:hover .btn-arrow { transform: translateX(4px); }
+
+.status-row {
+  display: flex; gap: 24px; justify-content: center; flex-wrap: wrap;
+  margin-top: 48px; font-size: 11px; color: var(--ink-dim);
+}
+.status-item { display: flex; align-items: center; gap: 6px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--phosphor); }
+.dot.amber { background: var(--amber); }
+
+/* ---- MAIN APP ---- */
+#app {
+  display: none; position: relative; z-index: 1;
+  min-height: 100vh;
+}
+
+/* top nav */
+nav {
+  display: flex; align-items: center; gap: 0;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--line);
+  height: 52px;
+}
+.nav-brand { font-size: 13px; color: var(--phosphor); font-weight: 600; margin-right: 24px; }
+.nav-tab {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--ink-dim); font-family: inherit; font-size: 12px;
+  padding: 16px 16px; cursor: pointer; letter-spacing: 0.04em;
+  transition: all 0.15s; height: 52px;
+}
+.nav-tab:hover { color: var(--ink); }
+.nav-tab.active { color: var(--phosphor); border-bottom-color: var(--phosphor); }
+.nav-right { margin-left: auto; font-size: 11px; color: var(--amber); letter-spacing: 0.04em; }
+
+/* tab panels */
+.panel { display: none; padding: 28px 24px; }
+.panel.active { display: block; }
+
+/* PLAYGROUND panel */
+.pg-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 0; min-height: calc(100vh - 52px); }
+@media (max-width: 800px) { .pg-grid { grid-template-columns: 1fr; } }
+.pg-left { padding: 24px; border-right: 1px solid var(--line); }
+.pg-right { padding: 24px; }
+label.fl { display: block; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--phosphor-dim); margin-bottom: 8px; font-weight: 600; }
+textarea#src {
+  width: 100%; height: 260px;
+  background: #030a06; color: var(--phosphor);
+  border: 1px solid var(--line); padding: 14px;
+  font-family: inherit; font-size: 13px; line-height: 1.65;
+  resize: vertical; outline: none;
+}
+textarea#src:focus { border-color: var(--phosphor-dim); }
+.tool-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; align-items: center; }
+.tbtn {
+  background: transparent; border: 1px solid var(--line);
+  color: var(--ink-dim); padding: 7px 13px;
+  font-family: inherit; font-size: 12px; cursor: pointer;
+  transition: all 0.12s;
+}
+.tbtn:hover { border-color: var(--phosphor-dim); color: var(--ink); }
+.run-btn {
+  background: var(--phosphor); color: var(--bg);
+  border: none; padding: 10px 24px;
+  font-family: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer; letter-spacing: 0.06em;
+  transition: opacity 0.15s;
+}
+.run-btn:hover { opacity: 0.85; }
+.st { font-size: 12px; min-height: 18px; margin-top: 8px; }
+.st.ok { color: var(--phosphor); }
+.st.err { color: #ff6a6a; }
+.result-hdr { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--phosphor-dim); margin: 20px 0 10px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--line); }
+.amp-row { display: grid; grid-template-columns: 60px 1fr 80px;
+  gap: 0 12px; font-size: 12px; padding: 5px 0;
+  border-bottom: 1px solid #0d1c13; align-items: center; }
+.bar-track { background: #0a150e; height: 12px; overflow: hidden; }
+.bar-fill { height: 100%; background: linear-gradient(90deg, var(--phosphor-dim), var(--phosphor)); }
+.meta { font-size: 11px; color: var(--ink-dim); margin-top: 12px; }
+
+/* ABOUT panel */
+.about-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.card {
+  background: var(--panel); border: 1px solid var(--line);
+  padding: 20px 22px;
+}
+.card h3 { font-size: 12px; color: var(--phosphor); letter-spacing: 0.1em;
+  text-transform: uppercase; margin-bottom: 10px; }
+.card p { font-size: 13px; color: var(--ink-dim); line-height: 1.65; }
+.card ul { font-size: 12.5px; color: var(--ink-dim); line-height: 1.8; padding-left: 16px; }
+.evidence { display: inline-block; font-size: 10px; padding: 2px 8px;
+  letter-spacing: 0.06em; margin: 2px 4px 2px 0; }
+.lv1 { background: rgba(95,251,192,0.12); color: var(--phosphor); }
+.lv0 { background: rgba(255,180,84,0.12); color: var(--amber); }
+
+/* --- INLINE QUANTUM ENGINE (JS port) --- */
+</style>
+</head>
+<body>
+
+<!-- LANDING -->
+<div id="landing">
+  <div class="sigil">
+    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- outer ring -->
+      <circle cx="60" cy="60" r="55" stroke="rgba(95,251,192,0.15)" stroke-width="1"/>
+      <!-- orbiting dot ring -->
+      <g class="orbit">
+        <circle cx="60" cy="5" r="3" fill="rgba(95,251,192,0.6)"/>
+        <circle cx="115" cy="60" r="2" fill="rgba(95,251,192,0.3)"/>
+        <circle cx="60" cy="115" r="3" fill="rgba(95,251,192,0.6)"/>
+        <circle cx="5" cy="60" r="2" fill="rgba(95,251,192,0.3)"/>
+      </g>
+      <!-- inner ring -->
+      <circle cx="60" cy="60" r="36" stroke="rgba(95,251,192,0.2)" stroke-width="1" stroke-dasharray="4 4"/>
+      <g class="orbit2">
+        <circle cx="60" cy="24" r="2.5" fill="rgba(255,180,84,0.7)"/>
+        <circle cx="96" cy="60" r="1.5" fill="rgba(255,180,84,0.4)"/>
+        <circle cx="60" cy="96" r="2.5" fill="rgba(255,180,84,0.7)"/>
+        <circle cx="24" cy="60" r="1.5" fill="rgba(255,180,84,0.4)"/>
+      </g>
+      <!-- nucleus -->
+      <circle cx="60" cy="60" r="10" stroke="rgba(95,251,192,0.5)" stroke-width="1.5"/>
+      <circle cx="60" cy="60" r="4" fill="rgba(95,251,192,0.8)"/>
+      <!-- cross hairs -->
+      <line x1="60" y1="50" x2="60" y2="20" stroke="rgba(95,251,192,0.2)" stroke-width="1"/>
+      <line x1="60" y1="70" x2="60" y2="100" stroke="rgba(95,251,192,0.2)" stroke-width="1"/>
+      <line x1="50" y1="60" x2="20" y2="60" stroke="rgba(95,251,192,0.2)" stroke-width="1"/>
+      <line x1="70" y1="60" x2="100" y2="60" stroke="rgba(95,251,192,0.2)" stroke-width="1"/>
+    </svg>
+  </div>
+
+  <div class="eyebrow">Open-Ended Quantum Liberty</div>
+  <h1>Quantum Foundry</h1>
+  <div class="attr">4 GOD &amp; 4 huMan</div>
+
+  <p class="tagline">
+    A verified, open-source quantum simulator, compiler, error-correction suite,
+    and research ecosystem. <b>Every number here was computed, not invented.</b>
+    Every claim is evidence-classified. All code is yours to read, run, and build on.
+  </p>
+
+  <button id="enterBtn" onclick="enter()">
+    <span>[ Enter ]</span>
+    <span class="btn-arrow">→</span>
+  </button>
+
+  <div class="status-row">
+    <div class="status-item"><div class="dot"></div>19 / 19 verification checks passing</div>
+    <div class="status-item"><div class="dot"></div>Apache-2.0 open source</div>
+    <div class="status-item"><div class="dot amber"></div>Physical hardware: not yet — honestly</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <nav>
+    <span class="nav-brand">⬡ OEQL</span>
+    <button class="nav-tab active" onclick="tab(this,'playground')">Playground</button>
+    <button class="nav-tab" onclick="tab(this,'about')">What we built</button>
+    <span class="nav-right">4 GOD &amp; 4 huMan</span>
+  </nav>
+
+  <!-- PLAYGROUND -->
+  <div class="panel active" id="panel-playground">
+    <div class="pg-grid">
+      <div class="pg-left">
+        <label class="fl">Circuit — QF-IR text format</label>
+        <textarea id="src">qubits 2
+h 0
+cx 0 1</textarea>
+        <div class="tool-row">
+          <button class="run-btn" onclick="runCircuit()">Run ▸</button>
+          <select id="ex" onchange="loadEx()" style="background:#030a06;color:var(--ink);border:1px solid var(--line);padding:7px 10px;font-family:inherit;font-size:12px;">
+            <option value="">— example —</option>
+            <option value="bell">Bell state</option>
+            <option value="ghz3">GHZ-3</option>
+            <option value="ghz5">GHZ-5</option>
+            <option value="qft3">QFT-3</option>
+          </select>
+          <button class="tbtn" onclick="document.getElementById('src').value='';document.getElementById('out').innerHTML='';document.getElementById('st').textContent=''">Clear</button>
+        </div>
+        <div id="st" class="st"></div>
+        <div class="result-hdr">Grammar</div>
+        <div style="font-size:12px;color:var(--ink-dim);line-height:1.9;">
+          qubits N &nbsp;·&nbsp; h Q &nbsp;·&nbsp; x Q &nbsp;·&nbsp; y Q &nbsp;·&nbsp; z Q &nbsp;·&nbsp; s Q &nbsp;·&nbsp; t Q<br>
+          rx Q θ &nbsp;·&nbsp; ry Q θ &nbsp;·&nbsp; rz Q θ<br>
+          cx C T &nbsp;·&nbsp; cz C T &nbsp;·&nbsp; swap A B &nbsp;·&nbsp; cp C T θ<br>
+          <span style="color:var(--line)"># comments · one instruction per line</span>
+        </div>
+      </div>
+      <div class="pg-right">
+        <div class="result-hdr">State vector &amp; measurement probabilities</div>
+        <div id="out"></div>
+        <div id="meta" class="meta"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <div class="panel" id="panel-about">
+    <div style="max-width:960px;margin:0 auto;">
+      <div style="margin-bottom:28px;">
+        <div class="result-hdr" style="margin-top:0;">What Quantum Foundry actually built</div>
+        <p style="font-size:13px;color:var(--ink-dim);line-height:1.7;max-width:680px;">
+          Every claim below is classified by evidence level. Level 1 = computational result,
+          verified against independent ground truth. Level 0 = hypothesis / research proposal.
+          No physical quantum hardware exists yet — honestly stated, not hidden.
+        </p>
+      </div>
+
+      <div class="about-grid">
+        <div class="card">
+          <h3>Statevector Simulator</h3>
+          <span class="evidence lv1">Level 1 — Verified</span>
+          <p>Exact complex-amplitude simulation. Bell, GHZ, QFT outputs match closed-form quantum mechanics to floating-point precision. Unitarity confirmed. 6/6 correctness checks.</p>
+        </div>
+        <div class="card">
+          <h3>QF-IR Compiler Front End</h3>
+          <span class="evidence lv1">Level 1 — Verified</span>
+          <p>QASM-lite text format → circuit IR → simulator execution. Round-trip parse and re-emit confirmed correct. Basis for a backend-agnostic compiler (OpenQASM3 next).</p>
+        </div>
+        <div class="card">
+          <h3>Repetition Code QEC</h3>
+          <span class="evidence lv1">Level 1 — Verified</span>
+          <p>Monte Carlo simulation of the bit-flip repetition code cross-validated against the closed-form majority-vote formula from Nielsen &amp; Chuang §10.1, within 6σ statistical tolerance, for distances 3, 5, 7.</p>
+        </div>
+        <div class="card">
+          <h3>Surface Code (Toric MWPM)</h3>
+          <span class="evidence lv1">Level 1 — Verified</span>
+          <p>Full toric-code MWPM decoder using exact graph matching. Threshold crossing at ~10–12% physical error rate, consistent with the Dennis/Kitaev/Landahl/Preskill 2002 literature ballpark. Bug found, fixed, documented.</p>
+        </div>
+        <div class="card">
+          <h3>qLDPC Codes (Hypergraph Product)</h3>
+          <span class="evidence lv1">Level 1 — Verified</span>
+          <p>Tillich-Zémor hypergraph product construction. CSS orthogonality verified across 15 independent trials. Structured (Hamming) seed codes eliminate single-qubit failures (0/58) vs random seeds (18/45). Distance advantage confirmed at n=241.</p>
+        </div>
+        <div class="card">
+          <h3>Belief Propagation Decoder</h3>
+          <span class="evidence lv1">Level 1 — Verified</span>
+          <p>Sum-product BP decoder implemented. Correctness invariant confirmed: convergence always means syndrome solved (200 trials). Honest finding: BP underperforms bit-flip on this small code due to short Tanner-graph cycles — documented, not hidden.</p>
+        </div>
+        <div class="card">
+          <h3>Smart Contracts (Foundry/Solidity)</h3>
+          <span class="evidence lv0">Level 0 — Written, not audited</span>
+          <p>ArtifactRegistry, ContributorReputation (soulbound), BountyEscrow written with full test suites. Not compiled or audited yet — needs forge build/test on a machine with network access. Bankr dependency removed entirely.</p>
+        </div>
+        <div class="card">
+          <h3>OEQL Architecture Proposal</h3>
+          <span class="evidence lv0">Level 0 — Speculative</span>
+          <p>Open-Ended Quantum Liberty: a substrate-adaptive computing architecture proposal. Self-assessed: introduces no new physics, only a proposed compiler/runtime integration layer. TRL 1. Honestly stated in the document itself.</p>
+        </div>
+        <div class="card">
+          <h3>Governance &amp; Outreach</h3>
+          <span class="evidence lv0">Level 0 — Draft</span>
+          <p>Founding charter draft, human authorization gate (any-human-sign-here mechanism), institution outreach system with real named targets (PyMatching, Stim, ldpc library, qLDPC package, Error Correction Zoo).</p>
+        </div>
+        <div class="card">
+          <h3>State Match Puzzle Game</h3>
+          <span class="evidence lv1">Level 1 — Working</span>
+          <p>Browser-playable quantum circuit puzzle game running on the real JS-ported simulator. Target states computed by the actual Python engine. Shared leaderboard via persistent storage. Real physics, not a theme.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:32px;padding:20px 22px;background:var(--panel);border:1px solid var(--line);">
+        <div class="result-hdr" style="margin-top:0;">What is NOT here — stated plainly</div>
+        <ul style="font-size:13px;color:var(--ink-dim);line-height:1.9;padding-left:20px;">
+          <li>No working physical quantum hardware — none claimed, none built, none exists in this project yet</li>
+          <li>No signed lab partnership — templates exist, no MOU signed</li>
+          <li>No received grant funding — pipeline defined, nothing committed</li>
+          <li>No audited smart contracts — written and waiting for forge + external audit</li>
+          <li>No independent reproduction of any result (Level 4) — self-audit prep written, external review is the next honest step</li>
+        </ul>
+      </div>
+
+      <div style="margin-top:16px;padding:16px 22px;border:1px solid var(--line);font-size:12px;color:var(--ink-dim);">
+        OEQL — Apache-2.0 — Attribution: 4 GOD &amp; 4 huMan — All results reproducible: <code style="color:var(--phosphor)">python3 -m benchmarks.canonical_suite</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- JS quantum engine (identical physics to core/statevector.py) ----
+class C {
+  constructor(re=0,im=0){this.re=re;this.im=im;}
+  static add(a,b){return new C(a.re+b.re,a.im+b.im);}
+  static mul(a,b){return new C(a.re*b.re-a.im*b.im,a.re*b.im+a.im*b.re);}
+  abs2(){return this.re*this.re+this.im*this.im;}
+}
+function gm(name,t){
+  const k=1/Math.sqrt(2);
+  if(name==='h')return[[new C(k),new C(k)],[new C(k),new C(-k)]];
+  if(name==='x')return[[new C(0),new C(1)],[new C(1),new C(0)]];
+  if(name==='y')return[[new C(0,0),new C(0,-1)],[new C(0,1),new C(0)]];
+  if(name==='z')return[[new C(1),new C(0)],[new C(0),new C(-1)]];
+  if(name==='s')return[[new C(1),new C(0)],[new C(0),new C(0,1)]];
+  if(name==='t')return[[new C(1),new C(0)],[new C(0),new C(Math.cos(Math.PI/4),Math.sin(Math.PI/4))]];
+  if(name==='rx')return[[new C(Math.cos(t/2)),new C(0,-Math.sin(t/2))],[new C(0,-Math.sin(t/2)),new C(Math.cos(t/2))]];
+  if(name==='ry')return[[new C(Math.cos(t/2)),new C(-Math.sin(t/2))],[new C(Math.sin(t/2)),new C(Math.cos(t/2))]];
+  if(name==='rz')return[[new C(Math.cos(-t/2),Math.sin(-t/2)),new C(0)],[new C(0),new C(Math.cos(t/2),Math.sin(t/2))]];
+}
+class Sim {
+  constructor(n){this.n=n;this.dim=1<<n;this.s=Array.from({length:1<<n},()=>new C(0));this.s[0]=new C(1);}
+  a1(name,q,t){const m=gm(name,t),b=1<<q,ns=this.s.slice();for(let i=0;i<this.dim;i++)if(!(i&b)){const i1=i|b,a0=this.s[i],a1=this.s[i1];ns[i]=C.add(C.mul(m[0][0],a0),C.mul(m[0][1],a1));ns[i1]=C.add(C.mul(m[1][0],a0),C.mul(m[1][1],a1));}this.s=ns;}
+  cx(c,t){const cb=1<<c,tb=1<<t,ns=this.s.slice();for(let i=0;i<this.dim;i++)if(i&cb)ns[i]=this.s[i^tb];this.s=ns;}
+  cz(c,t){const cb=1<<c,tb=1<<t;for(let i=0;i<this.dim;i++)if((i&cb)&&(i&tb))this.s[i]=C.mul(this.s[i],new C(-1));}
+  cp(c,t,th){const cb=1<<c,tb=1<<t,ph=new C(Math.cos(th),Math.sin(th));for(let i=0;i<this.dim;i++)if((i&cb)&&(i&tb))this.s[i]=C.mul(this.s[i],ph);}
+  sw(a,b){const ab=1<<a,bb=1<<b,ns=this.s.slice();for(let i=0;i<this.dim;i++)if(((i&ab)!==0)!==((i&bb)!==0))ns[i]=this.s[i^ab^bb];this.s=ns;}
+}
+function parseAndRun(src){
+  const lines=src.split('\n');let n=null,sim=null;
+  for(let li=0;li<lines.length;li++){
+    const parts=lines[li].split('#')[0].trim().split(/\s+/);
+    if(!parts[0])continue;const op=parts[0].toLowerCase();
+    if(op==='qubits'){n=parseInt(parts[1]);sim=new Sim(n);continue;}
+    if(!sim)throw new Error(`Line ${li+1}: 'qubits N' must come first`);
+    if(['h','x','y','z','s','t'].includes(op))sim.a1(op,parseInt(parts[1]));
+    else if(['rx','ry','rz'].includes(op))sim.a1(op,parseInt(parts[1]),parseFloat(parts[2]));
+    else if(op==='cx')sim.cx(parseInt(parts[1]),parseInt(parts[2]));
+    else if(op==='cz')sim.cz(parseInt(parts[1]),parseInt(parts[2]));
+    else if(op==='swap')sim.sw(parseInt(parts[1]),parseInt(parts[2]));
+    else if(op==='cp')sim.cp(parseInt(parts[1]),parseInt(parts[2]),parseFloat(parts[3]));
+    else throw new Error(`Line ${li+1}: unknown instruction '${op}'`);
+  }
+  if(!sim)throw new Error("Missing 'qubits N'");
+  return{sim,n};
+}
+
+const EXAMPLES={
+  bell:'qubits 2\nh 0\ncx 0 1',
+  ghz3:'qubits 3\nh 0\ncx 0 1\ncx 1 2',
+  ghz5:'qubits 5\nh 0\ncx 0 1\ncx 1 2\ncx 2 3\ncx 3 4',
+  qft3:'qubits 3\nh 0\ncp 1 0 1.5707963267948966\ncp 2 0 0.7853981633974483\nh 1\ncp 2 1 1.5707963267948966\nh 2\nswap 0 2'
+};
+
+function loadEx(){const v=document.getElementById('ex').value;if(v)document.getElementById('src').value=EXAMPLES[v];}
+
+function runCircuit(){
+  const t0=performance.now();
+  const st=document.getElementById('st'), out=document.getElementById('out'), meta=document.getElementById('meta');
+  try{
+    const {sim,n}=parseAndRun(document.getElementById('src').value);
+    const dt=(performance.now()-t0).toFixed(1);
+    const probs=sim.s.map(c=>c.abs2());
+    const total=probs.reduce((a,b)=>a+b,0);
+    let html='<div style="font-size:10.5px;color:var(--ink-dim);display:grid;grid-template-columns:58px 1fr 90px;gap:0 10px;padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--line);"><span>BASIS</span><span>PROBABILITY</span><span style=\'text-align:right\'>AMPLITUDE</span></div>';
+    sim.s.forEach((amp,i)=>{
+      const bits=i.toString(2).padStart(n,'0').split('').reverse().join('');
+      const p=probs[i];
+      html+=`<div class="amp-row" style="color:${p>0.001?'var(--phosphor)':'var(--ink-dim)'}">
+        <span>|${bits}&#x27E9;</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(p*100).toFixed(2)}%"></div></div>
+        <span style="text-align:right;font-size:11px">${(p*100).toFixed(1)}%</span>
+      </div>`;
+    });
+    out.innerHTML=html;
+    meta.innerHTML=`Total prob: ${total.toFixed(9)} &nbsp;·&nbsp; ${n} qubits &nbsp;·&nbsp; ${dt}ms`;
+    st.className='st ok'; st.textContent=`OK — ${n} qubits, ${sim.dim} basis states`;
+  }catch(e){st.className='st err';st.textContent='ERROR — '+e.message;out.innerHTML='';meta.innerHTML='';}
+}
+
+function tab(el,panel){
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-'+panel).classList.add('active');
+}
+
+function enter(){
+  document.getElementById('landing').style.display='none';
+  document.getElementById('app').style.display='block';
+  runCircuit();
+}
+</script>
+
+    <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a href="/game.html" style="display:inline-block;padding:12px 32px;
+        background:linear-gradient(135deg,#cc44ff,#ff00aa);
+        border:none;color:#fff;font-family:monospace;font-size:14px;font-weight:800;
+        letter-spacing:.1em;text-decoration:none;border-radius:40px;
+        box-shadow:0 0 24px #cc44ff66;">⚛️ PLAY: ORIGINS</a>
+      <a href="/playground.html" style="display:inline-block;padding:12px 32px;
+        background:transparent;border:2px solid #5ffbc0;
+        color:#5ffbc0;font-family:monospace;font-size:14px;font-weight:700;
+        letter-spacing:.08em;text-decoration:none;border-radius:40px;">⚡ Playground</a>
+    </div></body>
+</html>
