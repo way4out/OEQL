@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 
 /* =========================================================
-   QUANTUM FOUNDRY: ORIGINS
-   Attribution: 4 GOD & 4 huMan
+   OEQL: ORIGINS
    All target states computed by the actual Python simulator.
    All quantum simulation uses the verified JS engine.
    Terra Infinita: the final state. The horizon.
@@ -144,9 +143,8 @@ const Btn=({onClick,children,style,disabled})=>(
 function Menu({onPlay,highScore}){
   return(
     <div style={{...base,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:40,textAlign:'center'}}>
-      <div style={{fontSize:11,letterSpacing:'.22em',textTransform:'uppercase',color:DIM,marginBottom:16}}>QUANTUM FOUNDRY — ARCADE</div>
+       <div style={{fontSize:11,letterSpacing:'.22em',textTransform:'uppercase',color:DIM,marginBottom:16}}>OEQL — ARCADE</div>
       <h1 style={{fontSize:'clamp(36px,7vw,72px)',fontWeight:700,color:P,margin:'0 0 8px',textShadow:`0 0 40px ${P}55`}}>ORIGINS</h1>
-      <div style={{fontSize:14,color:A,letterSpacing:'.08em',marginBottom:32}}>All accreditation: 4 GOD &amp; 4 huMan</div>
       <p style={{maxWidth:480,color:DIM,lineHeight:1.7,fontSize:14,marginBottom:40}}>
         Build quantum circuits to match target states. The physics is real — every target was computed
         by the project's own verified simulator. 10 levels. One horizon.
@@ -269,7 +267,7 @@ function TerraInfinita({score,name,setName,lb,setLb}){
           </div>
         )}
         <div style={{fontSize:11,color:DIM,marginTop:8}}>
-          Quantum Foundry — Apache-2.0 — 4 GOD &amp; 4 huMan
+           OEQL — Open-Ended Quantum Liberty — Apache-2.0
         </div>
       </>}
     </div>
@@ -277,7 +275,7 @@ function TerraInfinita({score,name,setName,lb,setLb}){
 }
 
 // ── MAIN GAME ────────────────────────────────────────────────────────────────
-export default function QuantumOrigins(){
+export default function OEQLOrigins(){
   const [phase,setPhase]=useState('menu');      // menu/playing/win/over/ti
   const [li,setLi]=useState(0);                  // level index
   const [lives,setLives]=useState(3);
