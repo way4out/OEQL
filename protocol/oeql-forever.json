@@ -1,0 +1,18 @@
+{
+  "scheme": "oeql",
+  "namespace": "oeql://.forever",
+  "canonicalWebFallback": "https://oeql.onrender.com/",
+  "ownerLabel": "StellarNet LLC",
+  "status": "application-defined namespace",
+  "semantics": {
+    "root": "OEQL operating namespace",
+    "bank": "provider-connected financial-services workspace",
+    "forever": "durable namespace designation, not an uptime guarantee"
+  },
+  "security": {
+    "noFabricatedBalances": true,
+    "noFabricatedBacking": true,
+    "noUnauthorizedClaims": true,
+    "providerReportedFinancialDataOnly": true
+  }
+}
