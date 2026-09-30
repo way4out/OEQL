@@ -5,6 +5,17 @@ const app = express();
 app.use(express.json({limit:"1mb"}));
 const PORT = process.env.PORT || 10000;
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
+const SERVICE_TIERS = [
+  {id:"open",name:"Open",amount:0,currency:"usd",interval:"month"},
+  {id:"core",name:"Core",amount:900,currency:"usd",interval:"month"},
+  {id:"plus",name:"Plus",amount:2500,currency:"usd",interval:"month"},
+  {id:"pro",name:"Pro",amount:7500,currency:"usd",interval:"month"},
+  {id:"business",name:"Business",amount:25000,currency:"usd",interval:"month"},
+  {id:"enterprise",name:"Enterprise",amount:100000,currency:"usd",interval:"month"},
+  {id:"institutional",name:"Institutional",amount:500000,currency:"usd",interval:"month"},
+  {id:"infinity",name:"Infinity",amount:null,currency:"usd",interval:"custom"}
+];
+
 
 app.get("/health", (_req,res)=>res.json({ok:true,service:"OEQL Forever API",time:new Date().toISOString()}));
 app.get("/api/status", (_req,res)=>res.json({
@@ -13,6 +24,8 @@ app.get("/api/status", (_req,res)=>res.json({
   financial_provider:stripe?"stripe-configured":"not-configured",
   treasury:"provider-gated", metals:"custodian-gated", lending:"licensed-provider-gated"
 }));
+app.get("/api/tiers", (_req,res)=>res.json({company:"StellarNet LLC",product:"OEQL Forever Bank application services",regulated_financial_product:false,tiers:SERVICE_TIERS}));
+app.get("/api/legal-status", (_req,res)=>res.json({application_layer:"deployed",deposit_taking:"not_authorized",card_issuance:"issuer-required",money_transmission:"licensed-provider-required",fdic_insurance:"not claimed",bank_charter:"not claimed"}));
 app.get("/api/provider/stripe", async (_req,res)=>{
   if(!stripe)return res.json({configured:false});
   try{
