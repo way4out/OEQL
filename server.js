@@ -39,5 +39,7 @@ app.get("/api/metal-policy", (_req,res)=>res.json({
   silver:{status:"custodian-required",backing_claim:false},
   required_controls:["verified dealer/custodian","allocated ownership records","independent valuation","insurance/custody terms","customer disclosures","reconciliation"]
 }));
+app.get("/", (_req,res)=>res.sendFile(process.cwd()+"/bank.html"));
+app.get("/bank", (_req,res)=>res.sendFile(process.cwd()+"/bank.html"));
 app.use(express.static("."));
 app.listen(PORT,"0.0.0.0",()=>console.log("OEQL Forever API listening on "+PORT));
