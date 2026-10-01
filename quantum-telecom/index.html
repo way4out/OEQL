@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#05070b">
+<meta name="description" content="OEQL Quantum Telecom — Pass 1/4, a future-network control surface for 6G and post-6G research.">
+<link rel="manifest" href="manifest.webmanifest">
+<title>OEQL Quantum Telecom — Pass 1</title>
+<style>
+:root{--bg:#05070b;--panel:#0b111a;--line:#1c2a3a;--text:#edf6ff;--muted:#91a4b8;--cyan:#18d4ff;--green:#28e38a;--amber:#ffc857;--red:#ff6b7a}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(900px 500px at 50% -10%,#12304a 0%,transparent 65%),var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button{font:inherit} .wrap{max-width:1180px;margin:auto;padding:18px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0 20px}
+.brand{display:flex;gap:12px;align-items:center}.orb{width:42px;height:42px;border:1px solid #2c536c;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#102331,#071018);box-shadow:0 0 28px #18d4ff22}.orb:after{content:"";width:18px;height:18px;border:2px solid var(--cyan);border-radius:50%;box-shadow:0 0 16px var(--cyan)}
+h1{font-size:20px;margin:0}.sub{color:var(--muted);font-size:12px}.pill{border:1px solid #23516a;background:#0a1b25;color:#9deaff;padding:7px 10px;border-radius:999px;font-size:12px}
+.hero{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:14px}.card{background:linear-gradient(180deg,#0b121cdd,#080d14dd);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 10px 35px #0006}
+.hero h2{font-size:32px;line-height:1.08;margin:0 0 10px}.hero p{color:#a9bacb;margin:0 0 18px}.actions{display:flex;flex-wrap:wrap;gap:9px}
+.btn{border:1px solid #29465a;background:#0c1722;color:#eaf8ff;padding:11px 14px;border-radius:12px;cursor:pointer;transition:.15s}.btn:hover{transform:translateY(-1px);border-color:#3d7897}.primary{background:linear-gradient(135deg,#0ea8cc,#126b83);border-color:#42ddff}.ghost{background:transparent}.danger{border-color:#65333c;color:#ffadb7}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.metric{min-height:118px}.metric .k{color:var(--muted);font-size:12px}.metric .v{font-size:24px;font-weight:700;margin:8px 0}.ok{color:var(--green)}.warn{color:var(--amber)}.bad{color:var(--red)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #14202d}.row:last-child{border:0}.label{color:#b9c9d8}.value{font-weight:650}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+.notice{padding:11px 12px;border:1px solid #5a4822;background:#171307;border-radius:12px;color:#e8d7a0;margin-top:12px}.receipt{max-height:260px;overflow:auto}.empty{color:var(--muted);padding:12px 0}
+footer{color:#6f8295;text-align:center;font-size:11px;padding:20px 0}.modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:18px}.modal.open{display:flex}.modalbox{max-width:560px;width:100%;background:#0a1018;border:1px solid #29465a;border-radius:20px;padding:20px}.modalbox h3{margin-top:0}
+@media(max-width:820px){.hero,.two{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:500px){.grid{grid-template-columns:1fr 1fr}.hero h2{font-size:27px}.wrap{padding:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div class="brand"><div class="orb"></div><div><h1>OEQL Quantum Telecom</h1><div class="sub">Pass 1/4 · 7G+ Future Network Foundation</div></div></div><div class="pill" id="mode">RESEARCH / READY</div></header>
+<section class="hero">
+<div class="card"><div class="pill">IMMERSIVE CONNECTIVITY CONTROL</div><h2>Future-network access in one control surface.</h2><p>Adaptive multi-access, eSIM readiness, post-quantum security, telemetry and on-chain membership receipts—without pretending experimental capabilities are already commercial network service.</p><div class="actions"><button class="btn primary" id="activate">Activate $4/mo</button><button class="btn" id="wallet">Connect wallet</button><button class="btn ghost" id="esim">Prepare eSIM</button></div></div>
+<div class="card"><div class="sub">LIVE CAPABILITY MODEL</div><div class="row"><span class="label">Current access</span><span class="value ok" id="access">Browser / Wi‑Fi</span></div><div class="row"><span class="label">6G / IMT‑2030</span><span class="value warn">Future</span></div><div class="row"><span class="label">7G+ layer</span><span class="value">Experimental</span></div><div class="row"><span class="label">Quantum security</span><span class="value ok">Ready</span></div><div class="row"><span class="label">On-chain</span><span class="value" id="chain">Not connected</span></div></div>
+</section>
+<section class="grid">
+<div class="card metric"><div class="k">LATENCY</div><div class="v" id="lat">—</div><div class="sub">measured locally when available</div></div>
+<div class="card metric"><div class="k">THROUGHPUT</div><div class="v" id="through">—</div><div class="sub">browser estimate only</div></div>
+<div class="card metric"><div class="k">SECURITY</div><div class="v ok">PQC-ready</div><div class="sub">cryptographic boundary</div></div>
+<div class="card metric"><div class="k">eSIM</div><div class="v" id="sim">READY</div><div class="sub">carrier profile required</div></div>
+</section>
+<section class="two">
+<div class="card"><div class="sub">NETWORK STACK</div><div class="row"><span class="label">Multi-access</span><span class="value ok">Enabled</span></div><div class="row"><span class="label">NTN / satellite</span><span class="value">Capability-aware</span></div><div class="row"><span class="label">AI orchestration</span><span class="value ok">Enabled</span></div><div class="row"><span class="label">Integrated sensing</span><span class="value">Interface ready</span></div><div class="row"><span class="label">Device-to-device</span><span class="value">Interface ready</span></div><div class="row"><span class="label">Network slicing</span><span class="value">Interface ready</span></div></div>
+<div class="card"><div class="sub">ON-CHAIN RECEIPTS</div><div class="receipt" id="receipts"><div class="empty">No signed receipts yet.</div></div><div class="actions"><button class="btn" id="refresh">Refresh wallet</button><button class="btn ghost" id="clear">Clear local receipts</button></div></div>
+</section>
+<div class="notice">Important: “7G+” here is an OEQL experimental/future architecture designation. It is not a claim of an already deployed commercial 7G radio standard. Current global standardization is centered on ITU IMT‑2030 (6G). </div>
+<footer>OEQL Quantum Telecom · Pass 1/4 · Safe-by-default: no silent signatures, transfers, SIM installs, or fabricated network metrics.</footer>
+</div>
+<div class="modal" id="modal"><div class="modalbox"><h3 id="mt">Confirm</h3><p id="mb"></p><div class="actions"><button class="btn ghost" id="cancel">Cancel</button><button class="btn primary" id="confirm">Continue</button></div></div></div>
+<script>
+const $=s=>document.querySelector(s); const state=JSON.parse(localStorage.getItem("oeql.qt")||"{}"); state.receipts??=[];
+function save(){localStorage.setItem("oeql.qt",JSON.stringify(state))}
+function renderReceipts(){const el=$("#receipts"); if(!state.receipts.length){el.innerHTML='<div class="empty">No signed receipts yet.</div>';return} el.innerHTML=state.receipts.slice().reverse().map(r=>'<div class="row"><span><b>'+r.kind+'</b><br><span class="sub">'+r.time+'</span></span><span class="mono">'+r.hash.slice(0,12)+'…</span></div>').join("")}
+async function walletInfo(){if(!window.ethereum){$("#chain").textContent="No wallet";return false} try{const a=await ethereum.request({method:"eth_requestAccounts"}); const id=await ethereum.request({method:"eth_chainId"}); state.account=a[0];state.chainId=id;$("#chain").textContent=(a[0]||"").slice(0,6)+"…"+(id||"");save();return true}catch(e){$("#chain").textContent="Cancelled";return false}}
+async function signReceipt(kind){if(!window.ethereum){alert("Install or open an EIP-1193 wallet first.");return} if(!await walletInfo())return; const msg="OEQL Quantum Telecom | "+kind+" | "+new Date().toISOString(); try{const sig=await ethereum.request({method:"personal_sign",params:[msg,state.account]}); state.receipts.push({kind,time:new Date().toLocaleString(),hash:sig});save();renderReceipts();$("#mode").textContent="SIGNED / READY"}catch(e){alert("Signature cancelled; nothing was submitted.")}}
+function confirmBox(title,body,fn){$("#mt").textContent=title;$("#mb").textContent=body;$("#modal").classList.add("open");$("#confirm").onclick=()=>{$("#modal").classList.remove("open");fn()}}
+$("#cancel").onclick=()=>$("#modal").classList.remove("open");
+$("#wallet").onclick=walletInfo; $("#refresh").onclick=walletInfo; renderReceipts();
+$("#activate").onclick=()=>confirmBox("Authorize membership receipt","This creates a user-signed authorization receipt for the $4/month service. It does NOT move funds or create a recurring charge. A real subscription requires a configured payment provider/contract.",()=>signReceipt("Membership authorization"));
+$("#esim").onclick=()=>{state.esimPrepared=true;save();$("#sim").textContent="PREPARED";alert("eSIM workflow prepared. A carrier-issued SM-DP+ activation code/profile is still required; browsers cannot silently install a cellular profile.")};
+$("#clear").onclick=()=>{state.receipts=[];save();renderReceipts()};
+(async()=>{if(navigator.connection){$("#through").textContent=(navigator.connection.downlink||"—")+" Mbps";$("#access").textContent=navigator.connection.effectiveType||"Browser"} const t0=performance.now(); try{await fetch(location.href,{cache:"no-store",method:"HEAD"});$("#lat").textContent=Math.round(performance.now()-t0)+" ms"}catch{} })();
+</script>
+</body></html>
