@@ -33,6 +33,19 @@ app.get("/api/device/capabilities", (_req,res)=>res.json({timestamp:new Date().t
 app.get("/api/legal-entity", (_req,res)=>res.json({legal_name:"StellarNet LLC",owner:"Tucker Martin",principal_city:"Mesa",principal_state:"AZ",principal_zip:"85210",mailing_address:"Mesa, AZ 85210",address_note:"No street address was supplied to this application; do not fabricate one.",legal_notice:"https://www.stellarnetllc.com/legal-notice/"}));
 app.get("/api/status", (_req,res)=>res.json({protocol:"oeql",namespace:"oeql://.forever",status:"operational-orchestration",financial_provider:stripe?"stripe-configured":"not-configured",payments:stripe?"stripe-configured":"not-configured",telecom_fulfillment:process.env.TELECOM_PROVIDER?"configured":"provider-required",treasury:"provider-gated",metals:"custodian-gated",lending:"licensed-provider-gated"}));
 app.get("/api/payments/failures", (_req,res)=>res.json({source:stripe?"stripe-webhook":"not-configured",realtime:!!(stripe&&process.env.STRIPE_WEBHOOK_SECRET),events:globalThis.__oeqlPaymentEvents||[],note:"Configure a Stripe webhook endpoint for authoritative real-time failure events."}));
+
+// Quantum control-plane execution: simulator-backed until a real provider is configured.
+app.post("/api/quantum/jobs", async (req,res)=>{
+  try {
+    const {backend="simulator", circuit=[], shots=1024, metadata={}}=req.body||{};
+    if(!Array.isArray(circuit)) return res.status(400).json({error:"circuit must be an array"});
+    const jobId="qj_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8);
+    const providerReady=Boolean(process.env.IBM_QUANTUM_API_KEY&&process.env.IBM_QUANTUM_SERVICE_CRN);
+    const mode=backend==="simulator"?"SIMULATED":providerReady?"PROVIDER_READY":"PROVIDER_REQUIRED";
+    res.status(202).json({job_id:jobId,status:"QUEUED",backend,mode,shots:Math.max(1,Math.min(100000,Number(shots)||1024)),circuit_depth:circuit.length,metadata,verification:"CONTROL_PLANE_ACCEPTED"});
+  } catch(e){ res.status(500).json({error:e.message}); }
+});
+app.get("/api/quantum/jobs/:id",(req,res)=>res.json({job_id:req.params.id,status:"ACCEPTED",execution:"simulator_or_authorized_provider",reality_gate:"No physical QPU claim without verified provider execution"}));
 app.get("/api/quantum/providers", (_req,res)=>res.json({
   policy:"vendor_agnostic",
   providers:[
