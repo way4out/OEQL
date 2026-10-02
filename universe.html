@@ -44,4 +44,19 @@ qRender();
 function render(){arena.textContent="ROOM "+document.getElementById("roomName").value.trim().slice(0,24)+" • "+players.length+" local participant(s) • Score "+score;lb.innerHTML="<b>Leaderboard</b><br>"+players.map((p,i)=>(i+1)+". "+p.role+" — "+p.score+" pts").join("<br>")}
 document.getElementById("createRoom").addEventListener("click",()=>{const role=document.getElementById("role").value;players.push({role,score:Math.floor(Math.random()*100)});score+=25;render()});
 document.getElementById("eventBtn").addEventListener("click",()=>{const event=["Quantum Rift","Resonance Surge","Entanglement Storm","Chrono Shift"][Math.floor(Math.random()*4)];score+=50;arena.textContent=event+"! +50 points • "+document.getElementById("roomName").value.trim();render()});render()})();
-</script></body></html>
+</script>
+let oeqlWS=null;
+function connectArenaRealtime(){
+  try{
+    const room=document.getElementById("roomName").value.trim().slice(0,32)||"OEQL-PRIME";
+    const role=document.getElementById("role").value;
+    const proto=location.protocol==="https:"?"wss":"ws";
+    oeqlWS=new WebSocket(proto+"://"+location.host+"/ws");
+    oeqlWS.onopen=()=>{oeqlWS.send(JSON.stringify({type:"join",room,role,name:"Player"}));arena.textContent="LIVE • Room "+room+" • connecting players…"};
+    oeqlWS.onmessage=e=>{try{const m=JSON.parse(e.data);if(m.type==="joined"||m.type==="snapshot"){const ps=m.players||m.snapshot?.players||[];arena.textContent="LIVE COMMUNITY ARENA • "+room+" • "+ps.length+" player(s)";lb.innerHTML="<b>LIVE LEADERBOARD</b><br>"+ps.sort((a,b)=>b.score-a.score).slice(0,10).map((p,i)=>(i+1)+". "+esc(p.name||p.role)+" — "+p.score).join("<br>")}}catch{}};
+    oeqlWS.onclose=()=>{arena.textContent="Realtime connection closed — tap Create / Enter Arena to reconnect."};
+  }catch(e){arena.textContent="Realtime unavailable."}
+}
+document.getElementById("createRoom").addEventListener("click",()=>connectArenaRealtime());
+document.addEventListener("keydown",e=>{if(!oeqlWS||oeqlWS.readyState!==1)return;const m={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];if(m){e.preventDefault();oeqlWS.send(JSON.stringify({type:"input",x:m[0],y:m[1]}))}});
+</body></html>
