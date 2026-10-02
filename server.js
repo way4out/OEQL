@@ -237,6 +237,30 @@ app.post("/api/buy/:id",async(req,res)=>{
   }catch(e){res.status(502).json({message:e.message});}
 });
 app.get("/api/orders/:sessionId",async(req,res)=>{if(!stripe)return res.status(503).json({error:"payment_provider_not_configured"});try{const s=await stripe.checkout.sessions.retrieve(String(req.params.sessionId));const order=globalThis.__oeqlOrders?.[s.id]||{};res.json({...order,checkout_session:s.id,payment_status:s.payment_status,status:s.status,total:s.amount_total,customer:s.customer_details||null,receipt:"/api/receipts/"+s.id,receipt_qr:"/api/receipts/"+s.id+"/qr.svg"}); }catch(e){res.status(404).json({error:"order_unavailable",message:e.message})}});
+app.get("/universe", (_req,res)=>res.sendFile(process.cwd()+"/universe.html"));
+app.get("/api/universe/tokens", async (_req,res)=>{
+  const wallet="0x13653b6b8bd4b274da565faf6fa894e3418a6d10";
+  try{
+    const r=await fetch("https://api.bankr.bot/public/doppler/creator-fees/"+wallet+"?days=30");
+    const j=await r.json();
+    if(!r.ok) return res.status(r.status).json({wallet,tokens:[],error:"Bankr creator-data unavailable"});
+    res.json({wallet,source:"bankr-public-creator-fees",tokens:Array.isArray(j.tokens)?j.tokens:[],totals:j.totals||null});
+  }catch(e){res.status(503).json({wallet,tokens:[],error:"Bankr data unavailable"});}
+});
+app.post("/api/universe/customize", async (req,res)=>{
+  if(!stripe)return res.status(503).json({message:"Payment provider not configured."});
+  const wallet="0x13653b6b8bd4b274da565faf6fa894e3418a6d10";
+  const amount=Math.max(1,Math.round(Number(req.body?.amount||4)*100));
+  const customization=String(req.body?.customization||"").slice(0,500)||"Universe customization";
+  try{
+    const s=await stripe.checkout.sessions.create({mode:"payment",customer_creation:"always",
+      line_items:[{price_data:{currency:"usd",product_data:{name:"OEQL Universe Customization",description:customization},unit_amount:amount},quantity:1}],
+      success_url:(process.env.PUBLIC_URL||"https://oeql-bank-forever.onrender.com")+"/universe?paid=1&session_id={CHECKOUT_SESSION_ID}",
+      cancel_url:(process.env.PUBLIC_URL||"https://oeql-bank-forever.onrender.com")+"/universe?cancelled=1",
+      metadata:{oeql_product:"universe-customization",wallet,customization}});
+    res.json({url:s.url,one_tap:true,wallet,amount_cents:amount});
+  }catch(e){res.status(502).json({message:e.message});}
+});
 app.get("/api/marketplace",(_req,res)=>res.json({listings:SELLABLE_CATALOG,checkout:"/api/buy/:id",digital_delivery:"service-queue",physical_shipping:"disabled unless provider-backed",dropship_fee_percent:DROPSHIP_FEE_PERCENT}));
 app.get("/api/tasks", (_req,res)=>res.json({task_types:TASK_TYPES,workflow:["create","price","authorize","execute","review","deliver"]}));
 app.post("/api/tasks", (req,res)=>{const t=req.body||{};if(!t.title)return res.status(400).json({message:"title required"});res.status(201).json({id:"task_"+Date.now(),status:"queued",title:t.title,type:t.type||"web build",provider:t.provider||"user-selected",note:"Execution requires an authorized provider when applicable."})});
