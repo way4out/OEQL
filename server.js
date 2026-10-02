@@ -15,7 +15,6 @@ app.post("/api/stripe/webhook", express.raw({type:"application/json"}), (req,res
 });
 app.use(express.json({limit:"1mb"}));
 const PORT = process.env.PORT || 10000;
-const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 const SERVICE_TIERS = [
   {id:"open",name:"Open",amount:0,currency:"usd",interval:"month"},
   {id:"core",name:"Core",amount:900,currency:"usd",interval:"month"},
