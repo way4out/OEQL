@@ -12,7 +12,7 @@ main{max-width:1400px;margin:auto;padding:26px 20px}.hero{padding:28px;border:1p
 .cards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}.bankcard{height:205px;border-radius:19px;padding:18px;position:relative;overflow:hidden;box-shadow:0 18px 50px #0007}.bankcard:after{content:"";position:absolute;inset:auto -30px -60px auto;width:190px;height:190px;border-radius:50%;background:#fff2}.black{background:linear-gradient(135deg,#111,#343434)}.bronze{background:linear-gradient(135deg,#513719,#b87932)}.silver{background:linear-gradient(135deg,#59616b,#d9dee4);color:#111}.gold{background:linear-gradient(135deg,#6e5014,#e3c05c);color:#171205}.platinum{background:linear-gradient(135deg,#56606c,#f0f3f5);color:#111}.chip{width:39px;height:28px;border-radius:6px;background:#d5b978;margin:24px 0 45px}.cardname{font-weight:900}.recycle{font-size:10px;position:absolute;bottom:14px;right:14px}.actions{display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:900px){.grid,.grid3,.cards{grid-template-columns:1fr 1fr}}@media(max-width:560px){.grid,.grid3,.cards{grid-template-columns:1fr}h1{font-size:32px}}
 .tiergrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:18px}.tier{background:#0d121d;border:1px solid #1e293b;border-radius:18px;padding:20px}.tier h3{margin:0 0 8px}.price{font-size:28px;font-weight:800;margin-bottom:10px}.price span{font-size:13px;font-weight:500;color:#94a3b8}.tier p{color:#94a3b8;line-height:1.5} </style>
-</head>
+<link rel="manifest" href="manifest.webmanifest"></head>
 <body>
 <header><div><div class="brand">OEQ<b>L</b> FOREVER BANK</div><div class="uri">oeql://bank.forever</div></div><div class="pill">● SYSTEM ONLINE · PROVIDER-GATED RAILS</div></header>
 <main>
@@ -58,4 +58,4 @@ function connectProvider(){alert('Provider connection is ready to be wired after
 function providerGate(){alert('This action requires an authorized financial provider and verified user account before any money can move.')}
 status();
 </script>
-</body></html>
+<script>async function oeqlPay(){try{let r=await fetch((location.hostname.includes('github.io')?'https://oeql-forever-api.onrender.com':'')+'/api/checkout/telecom',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});let x=await r.json();if(x.url)location.href=x.url;else alert(x.message||'Payment provider not configured');}catch(e){alert('Live checkout backend unavailable. Configure the payment provider.')}}</script><button onclick="oeqlPay()" style="position:fixed;right:16px;bottom:16px;z-index:9;border:0;border-radius:999px;padding:14px 18px;font-weight:900;background:#37e8ff;color:#04101b">1-TAP $4/mo</button><script>if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js')</script></body></html>
