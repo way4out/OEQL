@@ -28,7 +28,12 @@ app.post("/api/stripe/webhook", express.raw({type:"application/json"}), async (r
     globalThis.__oeqlPaymentEvents=globalThis.__oeqlPaymentEvents||[];
     globalThis.__oeqlPaymentEvents.unshift({id:event.id,type:event.type,created:event.created,received_at:new Date().toISOString(),status:["payment_intent.payment_failed","invoice.payment_failed","charge.failed"].includes(event.type)?"failed":"received"});
     globalThis.__oeqlPaymentEvents=globalThis.__oeqlPaymentEvents.slice(0,200);
-    if(event.type==="checkout.session.completed"){\n      const session=event.data.object;\n      if(session.payment_status==="paid" && session.metadata?.order_type==="service"){\n        globalThis.__oeqlOrders=globalThis.__oeqlOrders||{};\n        globalThis.__oeqlOrders[session.id]={...(globalThis.__oeqlOrders[session.id]||{}),order_id:"ord_"+session.id,status:"queued",payment_status:"paid",paid_at:new Date().toISOString(),fulfillment:"oeql-service-queue"};\n      }
+    if(event.type==="checkout.session.completed"){
+      const session=event.data.object;
+      if(session.payment_status==="paid" && session.metadata?.order_type==="service"){
+        globalThis.__oeqlOrders=globalThis.__oeqlOrders||{};
+        globalThis.__oeqlOrders[session.id]={...(globalThis.__oeqlOrders[session.id]||{}),order_id:"ord_"+session.id,status:"queued",payment_status:"paid",paid_at:new Date().toISOString(),fulfillment:"oeql-service-queue"};
+      }
       const session=event.data.object;
       if(session.payment_status==="paid" && session.metadata?.dropship==="true"){
         try{await submitPrintfulOrderFromSession(session);}
