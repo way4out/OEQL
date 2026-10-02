@@ -1,0 +1,1 @@
+const C="oeql-forever-v1";self.addEventListener("install",e=>e.waitUntil(caches.open(C).then(c=>c.addAll(["./","./bank.html","./manifest.webmanifest"]))));self.addEventListener("fetch",e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>caches.match("./bank.html")))));
