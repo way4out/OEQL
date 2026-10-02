@@ -99,6 +99,29 @@ app.get("/api/quantum/providers", (_req,res)=>res.json({
   ],
   note:"Physical QPU execution requires an authorized provider account and credentials."
 }));
+app.get("/api/quantum/physical", (_req,res)=>res.json({
+  mode:process.env.QUANTUM_PROVIDER_API_URL?"PHYSICAL_PROVIDER_BRIDGE":"CONTROL_PLANE_ONLY",
+  physical_qpu:process.env.QUANTUM_PROVIDER_API_URL?"READY_FOR_AUTHORIZED_PROVIDER":"PROVIDER_REQUIRED",
+  provider:process.env.QUANTUM_PROVIDER_NAME||null,
+  backend:process.env.QUANTUM_PROVIDER_BACKEND||null,
+  authenticated:!!(process.env.QUANTUM_PROVIDER_API_URL&&process.env.QUANTUM_PROVIDER_API_KEY),
+  qkd:"HARDWARE_PROVIDER_REQUIRED",
+  quantum_networking:"HARDWARE_PROVIDER_REQUIRED",
+  post_quantum_security:"READY",
+  reality_gate:"Only verified responses from an authorized physical quantum provider are reported as physical execution."
+}));
+app.post("/api/quantum/execute", async (req,res)=>{
+  const url=process.env.QUANTUM_PROVIDER_API_URL;
+  if(!url)return res.status(503).json({error:"physical_qpu_provider_required",message:"Configure QUANTUM_PROVIDER_API_URL and QUANTUM_PROVIDER_API_KEY for authorized physical QPU execution.",mode:"CONTROL_PLANE_ONLY"});
+  try{
+    const headers={"Content-Type":"application/json"};
+    if(process.env.QUANTUM_PROVIDER_API_KEY)headers.Authorization="Bearer "+process.env.QUANTUM_PROVIDER_API_KEY;
+    const r=await fetch(url,{method:"POST",headers,body:JSON.stringify({circuit:Array.isArray(req.body?.circuit)?req.body.circuit:[],shots:Math.max(1,Math.min(100000,Number(req.body?.shots)||1024)),backend:req.body?.backend||process.env.QUANTUM_PROVIDER_BACKEND||undefined,metadata:req.body?.metadata||{}})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)return res.status(502).json({error:"physical_qpu_provider_error",provider_status:r.status,detail:j});
+    res.status(202).json({mode:"PHYSICAL_PROVIDER",provider:process.env.QUANTUM_PROVIDER_NAME||"authorized-provider",job:j,reality_gate:"Physical execution reported only from the configured authorized provider."});
+  }catch(e){res.status(502).json({error:"physical_qpu_bridge_failed",message:e.message});}
+});
 app.get("/api/quantum/capabilities", (_req,res)=>res.json({
   control_plane:"READY",
   physics_modeling:["state-vector","density-matrix","Hamiltonian","observables","uncertainty","provenance"],
