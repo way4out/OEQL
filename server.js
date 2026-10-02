@@ -208,6 +208,7 @@ const OEQL_PRODUCTS=[
 {id:"gazette-publishing",name:"Gazette Publishing Setup",category:"Gazette",price:12,description:"Publishing workspace setup and publication workflow configuration.",fulfillment:"oeql-service-queue"},
 {id:"universe-plus-access",name:"Universe+ Workspace Access",category:"Universe+",price:9,description:"OEQL Universe+ software workspace access.",fulfillment:"oeql-service-queue"},
 {id:"data-workflow",name:"Data Workflow Setup",category:"Data",price:19,description:"Data intake, organization and workflow configuration.",fulfillment:"oeql-service-queue"},
+{id:"archive-db-query",name:"Archived Database Search Query",category:"Data",price:1,description:"One paid search request routed against configured public or authorized data archives; private, sensitive, proprietary and inaccessible databases are excluded.",fulfillment:"oeql-data-search-queue"},
 {id:"security-review",name:"Security Configuration Review",category:"Security",price:49,description:"Application security configuration review and remediation task intake; not a guarantee of compliance.",fulfillment:"oeql-service-queue"},
 {id:"audit-package",name:"Audit Workflow Package",category:"Audit",price:39,description:"Audit-log and evidence workflow configuration.",fulfillment:"oeql-service-queue"},
 {id:"mobile-pwa-setup",name:"Mobile/PWA Setup",category:"Mobile",price:25,description:"Responsive mobile/PWA storefront configuration and testing task.",fulfillment:"oeql-service-queue"},
@@ -238,6 +239,27 @@ app.post("/api/buy/:id",async(req,res)=>{
 });
 app.get("/api/orders/:sessionId",async(req,res)=>{if(!stripe)return res.status(503).json({error:"payment_provider_not_configured"});try{const s=await stripe.checkout.sessions.retrieve(String(req.params.sessionId));const order=globalThis.__oeqlOrders?.[s.id]||{};res.json({...order,checkout_session:s.id,payment_status:s.payment_status,status:s.status,total:s.amount_total,customer:s.customer_details||null,receipt:"/api/receipts/"+s.id,receipt_qr:"/api/receipts/"+s.id+"/qr.svg"}); }catch(e){res.status(404).json({error:"order_unavailable",message:e.message})}});
 app.get("/universe", (_req,res)=>res.sendFile(process.cwd()+"/universe.html"));
+app.post("/api/data/search", async (req,res)=>{
+  const query=String(req.body?.query||"").trim();
+  const sessionId=String(req.body?.checkout_session_id||"").trim();
+  if(query.length<2||query.length>500)return res.status(400).json({error:"query_required","message":"Enter a 2-500 character search query."});
+  if(!stripe)return res.status(503).json({error:"payment_provider_not_configured"});
+  if(!sessionId)return res.status(402).json({error:"payment_required",product:"archive-db-query",price_usd:1});
+  try{
+    const session=await stripe.checkout.sessions.retrieve(sessionId);
+    if(session.payment_status!=="paid"||session.metadata?.oeql_product!=="archive-db-query")return res.status(402).json({error:"payment_not_verified"});
+    const jobId="ds_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8);
+    const job={job_id:jobId,query,created_at:new Date().toISOString(),status:"QUEUED",scope:"public_or_authorized_archives_only",sources:["NASA Earthdata","NOAA/NCEI","Bankr public API","StellarNet public application data"],excluded:["private","classified","proprietary","sensitive personal","inaccessible","nonexistent"],note:"This paid query creates a federated search job; it does not grant access to restricted databases."};
+    globalThis.__oeqlDataSearchJobs=globalThis.__oeqlDataSearchJobs||{};
+    globalThis.__oeqlDataSearchJobs[jobId]=job;
+    res.status(202).json(job);
+  }catch(e){res.status(502).json({error:"payment_verification_failed",message:e.message});}
+});
+app.get("/api/data/search/:id",(req,res)=>{
+  const job=globalThis.__oeqlDataSearchJobs?.[String(req.params.id)];
+  if(!job)return res.status(404).json({error:"search_job_not_found"});
+  res.json(job);
+});
 app.get("/api/universe/data", async (_req,res)=>{
   const now=new Date();
   const sources=[
