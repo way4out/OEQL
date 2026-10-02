@@ -64,11 +64,7 @@ app.get("/health", (_req,res)=>res.json({ok:true,service:"OEQL Forever API",time
 app.get("/api/integrations", (_req,res)=>res.json({stellar_phone:{status:"design-integration",web:"supported",mobile_pwa:"supported",native_os_adapters:"provider/device-specific",sim:"physical+eSIM provider-gated"},telephone:{api:"https://oeql-quantum-telecom-api.onrender.com",phone_web:"https://oeql-quantum-telecom-phone.onrender.com",status:"experimental post-6G control layer"},rollin:{marketplace:"https://rollin-marketplace-live.onrender.com",status:"deployed marketplace surface",repository:"https://github.com/way4out/Rollin"},quantum:{post_quantum_crypto:"architecture-ready",quantum_transport:"not claimed"}}));
 app.get("/api/device/capabilities", (_req,res)=>res.json({timestamp:new Date().toISOString(),browser:["Web","PWA"],os_families:["iOS/iPadOS","Android","HarmonyOS","KaiOS","Linux","Windows","macOS","ChromeOS"],cellular:["2G","3G","4G/LTE","5G","5G-Advanced"],sim:["nano-SIM","eSIM/eUICC"],future:["post-6G/7G+ experimental"],quantum_security:["PQC hybrid crypto"],note:"Capability detection reports what the current device/browser exposes; it does not create unsupported modem, carrier, spectrum or OS capabilities."}));
 app.get("/api/legal-entity", (_req,res)=>res.json({legal_name:"StellarNet LLC",owner:"Tucker Martin",principal_city:"Mesa",principal_state:"AZ",principal_zip:"85210",mailing_address:"Mesa, AZ 85210",address_note:"No street address was supplied to this application; do not fabricate one.",legal_notice:"https://www.stellarnetllc.com/legal-notice/"}));
-app.get('/modules',(_req,res)=>{const cards=OEQL_MODULES.map(x=>'<p><a href="/module/'+x[0]+'">Module '+x[0]+' — '+x[1]+'</a></p>').join('');res.type('html').send('<meta name="viewport" content="width=device-width,initial-scale=1"><body style="font:16px system-ui;background:#070b18;color:white;padding:20px"><h1>OEQL — 15 Standalone Modules</h1>'+cards+'</body>')});
-app.get('/module/:id',(req,res)=>{const f=OEQL_MODULES.find(x=>x[0]===String(req.params.id));if(!f)return res.status(404).send('Module not found');res.type('html').send('<h1>OEQL '+f[1]+'</h1>')});
-const OEQL_MODULES=[
-["01","Core"],["02","Finance"],["03","Telecom"],["04","eSIM"],["05","SIM"],["06","Market"],["07","AI"],["08","H.I.R."],["09","Gazette"],["010","Universe+"],["011","Data"],["012","Security"],["013","Audit"],["014","Mobile"],["015","Provider"]
-];
+ù¾¸Û
 app.post("/api/modules/:id/execute",async(req,res)=>{const id=String(req.params.id);const found=OEQL_MODULES.find(x=>x[0]===id);if(!found)return res.status(404).json({error:"Unknown module"});const [moduleId,name]=found;res.status(202).json({operation_id:"single_"+moduleId+"_"+Date.now().toString(36),status:"ACCEPTED",module:{id:moduleId,name,status:["Finance","Telecom","eSIM","SIM","Provider"].includes(name)?"PROVIDER_GATED":"READY"},quantum_control_plane:"QUANTUM_ENABLED",quantum_runtime:"IBM_QUANTUM_READY_WHEN_AUTHENTICATED",physical_capabilities:"GATED_BY_VERIFICATION",timestamp:new Date().toISOString()})});
 app.post("/api/modules/execute",async(req,res)=>{const ids=Array.isArray(req.body?.modules)?req.body.modules:OEQL_MODULES.map(x=>x[0]);const selected=ids.map(String).map(id=>OEQL_MODULES.find(x=>x[0]===id)).filter(Boolean);res.status(202).json({operation_id:"batch_"+Date.now().toString(36),status:"ACCEPTED",count:selected.length,modules:selected.map(([id,name])=>({id,name,status:["Finance","Telecom","eSIM","SIM","Provider"].includes(name)?"PROVIDER_GATED":"READY"})),quantum_control_plane:"READY",physical_capabilities:"GATED_BY_VERIFICATION",timestamp:new Date().toISOString()})});
 app.get("/api/platform/health",(_req,res)=>res.json({status:"READY",deployment:"production",surfaces:["app","web","mobile"],modules:OEQL_MODULES.length,individual_endpoints:true,batch_endpoint:true,quantum_control_plane:"READY",provider_gated:["Telecom","eSIM","SIM","Provider"],hardware_gated:["physical quantum compute","QKD"],timestamp:new Date().toISOString()}));
@@ -396,8 +392,7 @@ app.get("/api/telecom/catalog", (_req,res)=>res.json({
     physical_sim:{kit_one_time:4,monthly:4,kit_price_id:process.env.STRIPE_PHYSICAL_SIM_KIT_PRICE_ID||null,monthly_price_id:process.env.STRIPE_TELECOM_PRICE_ID||null,checkout:"/api/checkout/telecom/physical-sim",shipping:"provider-required"}
   },
   provider:{name:process.env.TELNYX_API_KEY?"telnyx":"not-configured",esim:!!process.env.TELNYX_API_KEY,physical_sim:!!(process.env.PSIM_USERNAME&&process.env.PSIM_PASSWORD&&process.env.PSIM_PLAN_PRICING_ID&&process.env.PSIM_SHIPPING_RATE_ID)},
-  note:"Connectivity and SIM fulfillment are only reported LIVE when the authorized provider credentials and fulfillment path are configured."
-}));
+  note:"Connectivity and SIM fulfillment are only reported LIVE when the authorized provider credentials and fulfillment path are configured."}));
 app.post("/api/checkout/telecom", async (_req,res)=>{if(!stripe)return res.status(503).json({message:"Configure STRIPE_SECRET_KEY on the backend."});try{let price=process.env.STRIPE_TELECOM_PRICE_ID;if(!price)return res.status(503).json({message:"Configure STRIPE_TELECOM_PRICE_ID for the $4/month plan."});let s=await stripe.checkout.sessions.create({mode:"subscription",line_items:[{price,quantity:1}],success_url:(process.env.PUBLIC_URL||"https://oeql.onrender.com")+"/?paid=1",cancel_url:(process.env.PUBLIC_URL||"https://oeql.onrender.com")+"/?cancelled=1",metadata:{oeql_product:"telecom_monthly",fulfillment:"provider_required"}});res.json({url:s.url})}catch(e){res.status(502).json({message:e.message})}});
 app.post("/api/checkout/telecom/esim", async (_req,res)=>{if(!stripe)return res.status(503).json({message:"Payment provider not configured."});if(!process.env.TELNYX_API_KEY)return res.status(503).json({message:"eSIM fulfillment is not enabled until the authorized telecom provider credential is configured.",provider_ready:false});try{const activation=process.env.STRIPE_ESIM_ACTIVATION_PRICE_ID,monthly=process.env.STRIPE_TELECOM_PRICE_ID;if(!activation||!monthly)return res.status(503).json({message:"eSIM pricing is not configured."});const s=await stripe.checkout.sessions.create({mode:"subscription",line_items:[{price:activation,quantity:1},{price:monthly,quantity:1}],customer_creation:"always",success_url:(process.env.PUBLIC_URL||"https://oeql.onrender.com")+"/?telecom=esim&paid=1",cancel_url:(process.env.PUBLIC_URL||"https://oeql.onrender.com")+"/?telecom=esim&cancelled=1",metadata:{oeql_product:"esim",activation_fee:"4",monthly_fee:"4",fulfillment:"telnyx_provider_required"}});res.json({url:s.url,provider_ready:!!process.env.TELNYX_API_KEY})}catch(e){res.status(502).json({message:e.message})}});
 app.post("/api/checkout/telecom/physical-sim", async (_req,res)=>{if(!stripe)return res.status(503).json({message:"Payment provider not configured."});if(!process.env.PSIM_USERNAME||!process.env.PSIM_PASSWORD||!process.env.PSIM_PLAN_PRICING_ID||!process.env.PSIM_SHIPPING_RATE_ID)return res.status(503).json({message:"Physical SIM checkout is disabled until the authorized 1PSIM reseller credentials, plan pricing ID, and shipping rate ID are configured.",provider_ready:false,provider:"1psim"});try{const kit=process.env.STRIPE_PHYSICAL_SIM_KIT_PRICE_ID,monthly=process.env.STRIPE_TELECOM_PRICE_ID;if(!kit||!monthly)return res.status(503).json({message:"Physical SIM pricing is not configured."});const s=await stripe.checkout.sessions.create({mode:"subscription",line_items:[{price:kit,quantity:1},{price:monthly,quantity:1}],customer_creation:"always",shipping_address_collection:{allowed_countries:["US"]},success_url:(process.env.PUBLIC_URL||"https://oeql.onrender.com")+"/?telecom=physical-sim&paid=1",cancel_url:(process.env.PUBLIC_URL||"https://oeql.onrender.com")+"/?telecom=physical-sim&cancelled=1",metadata:{oeql_product:"physical_sim",kit_fee:"4",monthly_fee:"4",fulfillment:"1psim"}});res.json({url:s.url,provider_ready:true,provider:"1psim"})}catch(e){res.status(502).json({message:e.message})}});
@@ -517,44 +512,3 @@ app.get("/api/metal-policy", (_req,res)=>res.json({
 app.get("/", (_req,res)=>res.sendFile(process.cwd()+"/bank.html"));
 app.get("/bank", (_req,res)=>res.sendFile(process.cwd()+"/bank.html"));
 app.use(express.static("."));
-
-import { WebSocketServer } from "ws";
-const wss = new WebSocketServer({ noServer:true });
-const rooms = new Map();
-function room(code){let r=rooms.get(code);if(!r){r={players:new Map(),events:[],seq:0};rooms.set(code,r)}return r}
-function broadcast(r,payload){const data=JSON.stringify(payload);for(const p of r.players.values())if(p.ws.readyState===1)p.ws.send(data)}
-function snap(r){return {type:"snapshot",seq:r.seq,events:r.events.slice(-6),players:[...r.players.values()].map(p=>({id:p.id,name:p.name,role:p.role,x:p.x,y:p.y,score:p.score,hp:p.hp,energy:p.energy}))}}
-wss.on("connection",(ws)=>{
- let current=null,me=null;
- ws.on("message",(raw)=>{
-  try{
-   const m=JSON.parse(raw.toString());
-   if(m.type==="join"){
-    const code=String(m.room||"OEQL-PRIME").replace(/[^A-Za-z0-9_-]/g,"").slice(0,32)||"OEQL-PRIME";
-    current=room(code);
-    if(current.players.size>=64){ws.send(JSON.stringify({type:"error",error:"room_full"}));return}
-    me={id:Math.random().toString(36).slice(2,10),name:String(m.name||"Player").slice(0,24),role:String(m.role||"Explorer").slice(0,24),x:100+Math.random()*700,y:80+Math.random()*360,score:0,hp:100,energy:100,vx:0,vy:0,ws};
-    current.players.set(me.id,me);current.seq++;
-    ws.send(JSON.stringify({type:"joined",id:me.id,room:code,capacity:64,snapshot:snap(current)}));
-    broadcast(current,{type:"system",message:me.name+" entered the arena",seq:current.seq});
-    return;
-   }
-   if(!current||!me)return;
-   if(m.type==="input"){
-    me.vx=Math.max(-1,Math.min(1,Number(m.x)||0));me.vy=Math.max(-1,Math.min(1,Number(m.y)||0));
-   } else if(m.type==="event"){
-    const kinds=["Quantum Rift","Resonance Surge","Entanglement Storm","Chrono Shift"];
-    const event=kinds[Math.max(0,Math.min(kinds.length-1,Number(m.index)||0))];
-    me.score+=50;me.energy=Math.min(100,me.energy+10);current.seq++;
-    current.events.push({event,player:me.name,at:Date.now(),seq:current.seq});
-    if(current.events.length>20)current.events.shift();
-    broadcast(current,{type:"event",event,player:me.name,seq:current.seq});
-   }
-  }catch{}
- });
- ws.on("close",()=>{if(current&&me){current.players.delete(me.id);current.seq++;broadcast(current,{type:"system",message:me.name+" left the arena",seq:current.seq});if(!current.players.size)rooms.delete([...rooms.entries()].find(([k,v])=>v===current)?.[0])}});
-});
-setInterval(()=>{for(const r of rooms.values()){for(const p of r.players.values()){p.x=Math.max(30,Math.min(870,p.x+p.vx*7));p.y=Math.max(30,Math.min(470,p.y+p.vy*7));p.energy=Math.max(0,p.energy-.04)}r.seq++;broadcast(r,snap(r))}},50);
-const _oldListen=app.listen.bind(app);
-const _server=_oldListen(PORT,"0.0.0.0",()=>console.log("OEQL Forever API listening on "+PORT));
-_server.on("upgrade",(req,socket,head)=>{if(req.url==="/ws"){wss.handleUpgrade(req,socket,head,ws=>wss.emit("connection",ws))}});
