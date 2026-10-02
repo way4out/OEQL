@@ -238,6 +238,22 @@ app.post("/api/buy/:id",async(req,res)=>{
 });
 app.get("/api/orders/:sessionId",async(req,res)=>{if(!stripe)return res.status(503).json({error:"payment_provider_not_configured"});try{const s=await stripe.checkout.sessions.retrieve(String(req.params.sessionId));const order=globalThis.__oeqlOrders?.[s.id]||{};res.json({...order,checkout_session:s.id,payment_status:s.payment_status,status:s.status,total:s.amount_total,customer:s.customer_details||null,receipt:"/api/receipts/"+s.id,receipt_qr:"/api/receipts/"+s.id+"/qr.svg"}); }catch(e){res.status(404).json({error:"order_unavailable",message:e.message})}});
 app.get("/universe", (_req,res)=>res.sendFile(process.cwd()+"/universe.html"));
+app.get("/api/universe/data", async (_req,res)=>{
+  const now=new Date();
+  const payload={
+    timestamp:now.toISOString(),
+    epoch_ms:Date.now(),
+    universal_clock:{utc:now.toISOString(),unix_ms:Date.now()},
+    resonance:{source:"Earth-ionosphere model",hz:[7.83,14.3,20.8,27.3,33.8]},
+    game:{world:"StellarNet Universe",layers:["3D","4D-time","5D-state"],realtime_endpoint:"/ws",quantum_mode:"browser/control-plane simulation"},
+    platform:{surfaces:["web","mobile","PWA","app"],device_capabilities:"/api/device/capabilities"},
+    quantum:{control_plane:"/api/quantum/capabilities",physical_qpu:"provider-required"},
+    integrations:{status:"/api/integrations",bankr_creator_data:"/api/universe/tokens"},
+    scientific_scope:{note:"This hub aggregates application-visible/public data; it does not claim to contain literally all data in the universe."}
+  };
+  try{const r=await fetch("https://api.bankr.bot/public/doppler/creator-fees/0x13653b6b8bd4b274da565faf6fa894e3418a6d10?days=30");const j=await r.json();payload.bankr={source:"Bankr public creator-fees",ok:r.ok,tokens:Array.isArray(j.tokens)?j.tokens:[],totals:j.totals||null};}catch{payload.bankr={source:"Bankr public creator-fees",ok:false,tokens:[],totals:null};}
+  res.json(payload);
+});
 app.get("/api/universe/tokens", async (_req,res)=>{
   const wallet="0x13653b6b8bd4b274da565faf6fa894e3418a6d10";
   try{
