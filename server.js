@@ -2,7 +2,18 @@ import express from "express";
 import Stripe from "stripe";
 
 const app = express();
-app.post("/api/stripe/webhook", express.raw({type:"application/json"}), (req,res)=>{\n  if(!stripe || !process.env.STRIPE_WEBHOOK_SECRET) return res.status(503).json({error:"stripe_webhook_not_configured"});\n  try { const event=stripe.webhooks.constructEvent(req.body,req.headers["stripe-signature"],process.env.STRIPE_WEBHOOK_SECRET); globalThis.__oeqlPaymentEvents=globalThis.__oeqlPaymentEvents||[]; globalThis.__oeqlPaymentEvents.unshift({id:event.id,type:event.type,created:event.created,received_at:new Date().toISOString(),status:["payment_intent.payment_failed","invoice.payment_failed","charge.failed"].includes(event.type)?"failed":"received"}); globalThis.__oeqlPaymentEvents=globalThis.__oeqlPaymentEvents.slice(0,200); res.json({received:true}); } catch(e){ res.status(400).json({error:"invalid_webhook",message:e.message}); }\n});\napp.use(express.json({limit:"1mb"}));
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
+app.post("/api/stripe/webhook", express.raw({type:"application/json"}), (req,res)=>{
+  if(!stripe || !process.env.STRIPE_WEBHOOK_SECRET) return res.status(503).json({error:"stripe_webhook_not_configured"});
+  try {
+    const event=stripe.webhooks.constructEvent(req.body,req.headers["stripe-signature"],process.env.STRIPE_WEBHOOK_SECRET);
+    globalThis.__oeqlPaymentEvents=globalThis.__oeqlPaymentEvents||[];
+    globalThis.__oeqlPaymentEvents.unshift({id:event.id,type:event.type,created:event.created,received_at:new Date().toISOString(),status:["payment_intent.payment_failed","invoice.payment_failed","charge.failed"].includes(event.type)?"failed":"received"});
+    globalThis.__oeqlPaymentEvents=globalThis.__oeqlPaymentEvents.slice(0,200);
+    res.json({received:true});
+  } catch(e) { res.status(400).json({error:"invalid_webhook",message:e.message}); }
+});
+app.use(express.json({limit:"1mb"}));
 const PORT = process.env.PORT || 10000;
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 const SERVICE_TIERS = [
