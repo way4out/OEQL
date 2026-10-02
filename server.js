@@ -33,6 +33,20 @@ app.get("/api/device/capabilities", (_req,res)=>res.json({timestamp:new Date().t
 app.get("/api/legal-entity", (_req,res)=>res.json({legal_name:"StellarNet LLC",owner:"Tucker Martin",principal_city:"Mesa",principal_state:"AZ",principal_zip:"85210",mailing_address:"Mesa, AZ 85210",address_note:"No street address was supplied to this application; do not fabricate one.",legal_notice:"https://www.stellarnetllc.com/legal-notice/"}));
 app.get("/api/status", (_req,res)=>res.json({protocol:"oeql",namespace:"oeql://.forever",status:"operational-orchestration",financial_provider:stripe?"stripe-configured":"not-configured",payments:stripe?"stripe-configured":"not-configured",telecom_fulfillment:process.env.TELECOM_PROVIDER?"configured":"provider-required",treasury:"provider-gated",metals:"custodian-gated",lending:"licensed-provider-gated"}));
 app.get("/api/payments/failures", (_req,res)=>res.json({source:stripe?"stripe-webhook":"not-configured",realtime:!!(stripe&&process.env.STRIPE_WEBHOOK_SECRET),events:globalThis.__oeqlPaymentEvents||[],note:"Configure a Stripe webhook endpoint for authoritative real-time failure events."}));
+app.get("/api/quantum/capabilities", (_req,res)=>res.json({
+  control_plane:"READY",
+  physics_modeling:["state-vector","density-matrix","Hamiltonian","observables","uncertainty","provenance"],
+  quantum_compute:"PROVIDER_REQUIRED",
+  quantum_networking:"HARDWARE_REQUIRED",
+  qkd:"HARDWARE_REQUIRED",
+  post_quantum_security:"READY",
+  os_orchestration:"READY",
+  universe_plus:"READY",
+  universe_sim_plus:"READY",
+  hir:"READY",
+  classical_fallback:"READY",
+  reality_gate:"Software does not claim physical qubits, entanglement, QKD, RF spectrum, carrier networks, or alternate universes without verified hardware/provider state."
+}));
 app.get("/api/universal/live", (_req,res)=>res.json({timestamp:new Date().toISOString(),mode:"live-event-stream",retroactive:"audit-history-only",forward:"new-events",quantum_transport:"not-claimed",telecom:"provider-backed",capabilities:["web","mobile-web","PWA","payments","telecom","marketplace","tasks","audit","universal-data"]}));
 app.get("/api/views", (_req,res)=>res.json({count:13,views:["Command","Accounts","Payments","Telecom","Marketplace","Tasks","Universe+","UniverseSim+","H.I.R.","Gazette","Security","Audit","Settings"]}));
 const MARKETPLACE = [
