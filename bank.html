@@ -59,4 +59,14 @@ function setLocale(v){localStorage.setItem("oeql_locale",v);document.documentEle
 (function(){const t=localStorage.getItem("oeql_theme");if(t==="light")document.body.classList.add("light");setLocale(localStorage.getItem("oeql_locale")||"auto")})()
 async function quantum(){try{const j=await jget("/api/quantum/capabilities");document.getElementById("qcap").innerHTML=Object.entries(j).filter(([k])=>k!=="reality_gate").map(([k,v])=>`<div class="row"><span>${k}</span><span class="${String(v).includes("READY")?"ok":"warn"}">${v}</span></div>`).join("")+`<div class="notice">${j.reality_gate}</div>`}catch(e){}}\nasync function boot(){await Promise.all([audit(),telecom(),payments(),marketplace(),live(),quantum()]);document.getElementById("settingsOut").textContent=location.origin+"\n13 views · 15 perspectives · PWA enabled"}boot();setInterval(()=>{live();payments()},5000);
 if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
+</script><section class="card" id="quantum-job-console"><h2>Quantum Job Console</h2><p>Submit simulator workloads now; provider execution activates only with verified credentials.</p><textarea id="qCircuit" rows="4" placeholder='[{"gate":"H","qubit":0},{"gate":"MEASURE","qubit":0}]'></textarea><button onclick="submitQuantumJob()">Run Quantum Job</button><pre id="qJobResult"></pre></section>
+<script>
+async function submitQuantumJob(){
+  const out=document.getElementById("qJobResult");
+  try{
+    let circuit=JSON.parse(document.getElementById("qCircuit").value||'[{"gate":"H","qubit":0},{"gate":"MEASURE","qubit":0}]');
+    const r=await fetch("/api/quantum/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({backend:"simulator",circuit,shots:1024})});
+    const j=await r.json(); out.textContent=JSON.stringify(j,null,2);
+  }catch(e){out.textContent=String(e)}
+}
 </script></body></html>
