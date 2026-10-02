@@ -250,7 +250,9 @@ async function telnyx(path, options={}) {
 }
 app.get("/api/telecom/status", (_req,res)=>res.json({
   provider:process.env.TELNYX_API_KEY?"telnyx":"not-configured",
-  physical_sim:process.env.TELNYX_API_KEY?"provider-ready":"provider-credential-required",
+  physical_sim:process.env.PSIM_USERNAME&&process.env.PSIM_PASSWORD?"provider-ready":"provider-credential-required",
+  physical_sim_provider:"1psim",
+  physical_sim_endpoint:process.env.PSIM_API_BASE||"https://1psim.api.lifeline.mobi",
   esim:process.env.TELNYX_API_KEY?"provider-ready":"provider-credential-required",
   service_billing:stripe&&process.env.STRIPE_TELECOM_PRICE_ID?"stripe-live":"not-configured"
 }));
@@ -263,12 +265,26 @@ app.post("/api/telecom/esim/purchase", async (req,res)=>{
     res.status(201).json({provider:"telnyx",result:out});
   }catch(e){res.status(503).json({error:"esim_provider_required",message:e.message});}
 });
+async function onePsimToken(){
+  const base=process.env.PSIM_API_BASE||"https://1psim.api.lifeline.mobi";
+  if(!process.env.PSIM_USERNAME||!process.env.PSIM_PASSWORD) throw new Error("1PSIM reseller credentials not configured");
+  const r=await fetch(base+"/public/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:process.env.PSIM_USERNAME,password:process.env.PSIM_PASSWORD})});
+  const j=await r.json();
+  if(!r.ok||!j?.authToken) throw new Error(j?.message||"1PSIM authentication failed");
+  return {base,token:j.authToken};
+}
 app.post("/api/telecom/physical-sim/order", async (req,res)=>{
-  if(!process.env.PHYSICAL_SIM_FULFILLMENT_URL) return res.status(503).json({error:"physical_sim_fulfillment_required",message:"Configure an authorized physical-SIM fulfillment/shipping provider before accepting payment for physical SIM orders.",checkout_available:false});
   try{
-    const out=await fetch(process.env.PHYSICAL_SIM_FULFILLMENT_URL,{method:"POST",headers:{"Content-Type":"application/json","Authorization":process.env.PHYSICAL_SIM_FULFILLMENT_TOKEN?("Bearer "+process.env.PHYSICAL_SIM_FULFILLMENT_TOKEN):""},body:JSON.stringify({product:"oeql-quantum-telecom-sim",quantity:Math.max(1,Math.min(10,Number(req.body?.quantity||1))),shipping_address:req.body?.shipping_address||null})});
-    const j=await out.json(); if(!out.ok) throw new Error(j?.message||"Fulfillment provider rejected order");
-    res.status(201).json({fulfillment:j});
+    const {base,token}=await onePsimToken();
+    const a=req.body?.shipping_address||{};
+    const planPricingId=process.env.PSIM_PLAN_PRICING_ID;
+    const shippingRateId=process.env.PSIM_SHIPPING_RATE_ID;
+    if(!planPricingId||!shippingRateId) return res.status(503).json({error:"physical_sim_provider_configuration_required",message:"Configure PSIM_PLAN_PRICING_ID and PSIM_SHIPPING_RATE_ID for the authorized 1PSIM reseller account.",checkout_available:false});
+    const payload={paymentGateway:"balance",planPricingIds:[planPricingId],shippingFirstName:a.first_name||a.firstName||"",shippingLastName:a.last_name||a.lastName||"",shippingPhoneNumber:a.phone||"",shippingAddress1:a.line1||a.address1||"",shippingAddress2:a.line2||a.address2||"",shippingCity:a.city||"",shippingState:a.state||"",shippingCountry:a.country||"US",shippingZipcode:a.postal_code||a.zipcode||"",shippingRateId,zipCodeActivation:a.postal_code||a.zipcode||""};
+    const r=await fetch(base+"/subscriber/sim/purchase",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify(payload)});
+    const j=await r.json();
+    if(!r.ok) throw new Error(j?.message||"1PSIM physical SIM order failed");
+    res.status(201).json({provider:"1psim",fulfillment:j});
   }catch(e){res.status(503).json({error:"physical_sim_fulfillment_error",message:e.message});}
 });
 app.get("/api/contracts/templates", (_req,res)=>res.json({notice:"Templates require human/legal review before use.",templates:[
