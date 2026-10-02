@@ -193,7 +193,7 @@ const OEQL_444=Array.from({length:44400},(_,i)=>{const n=String(i+1).padStart(5,
 const SELLABLE_CATALOG=[...MARKETPLACE,...OEQL_444];
 app.get("/api/marketplace/444",(req,res)=>{const limit=Math.max(1,Math.min(500,Number(req.query.limit)||100));const page=Math.max(0,Number(req.query.page)||0);res.json({count:OEQL_444.length,capacity_multiplier:"100x",currency:"USD",page,limit,items:OEQL_444.slice(page*limit,(page+1)*limit).map(x=>({...x,checkout:"/api/buy/"+x.id}))})});
 const TASK_TYPES = ["web build","mobile build","AI build","automation","content","research","legal-document draft","telecom integration","marketplace listing"];
-app.get("/api/buyable",(_req,res)=>res.json({currency:"USD",items:MARKETPLACE.filter(x=>x.buyable).map(x=>({id:x.id,title:x.title,price:x.price,unit:x.unit,checkout:"/api/buy/"+x.id})),provider_gated:MARKETPLACE.filter(x=>!x.buyable).map(x=>({id:x.id,title:x.title,reason:x.fulfillment}))}));
+app.get("/api/buyable",(_req,res)=>res.json({currency:"USD",one_tap:true,items:SELLABLE_CATALOG.filter(x=>x.buyable).map(x=>({id:x.id,title:x.title,price:x.price,unit:x.unit,checkout:"/api/buy/"+x.id,fulfillment:x.fulfillment})),provider_gated:MARKETPLACE.filter(x=>!x.buyable).map(x=>({id:x.id,title:x.title,reason:x.fulfillment}))}));
 app.post("/api/buy/:id",async(req,res)=>{
   if(!stripe)return res.status(503).json({message:"Payment provider not configured."});
   const item=SELLABLE_CATALOG.find(x=>x.id===String(req.params.id));
@@ -201,13 +201,13 @@ app.post("/api/buy/:id",async(req,res)=>{
   if(!item&&!pf)return res.status(404).json({message:"Product not found."});
   if(String(req.params.id).startsWith("pf-")&&!pf)return res.status(409).json({message:"Printful product mapping unavailable."});
   if(item&&!item.buyable)return res.status(409).json({message:"This item is not currently buyable; required fulfillment/provider capability is unavailable.",fulfillment:item.fulfillment});
-  if(item?.shippable&&!pf)return res.status(409).json({message:"Physical fulfillment mapping required before checkout.",fulfillment:"provider-required"});
+  const providerFulfillment=Boolean(pf);
   try{
     const product=pf||item;
     const success=(process.env.PUBLIC_URL||"https://oeql-bank-forever.onrender.com")+"/bank?paid=1";
     const feeCents=Math.round(Number(product.price||item?.price||0)*100*DROPSHIP_FEE_PERCENT/100);
-    const params={mode:"payment",line_items:[{price_data:{currency:"usd",product_data:{name:product.title||item.title},unit_amount:Math.round(Number(product.price||item.price)*100)},quantity:1}],shipping_address_collection:{allowed_countries:["US"]},success_url:success,cancel_url:(process.env.PUBLIC_URL||"https://oeql-bank-forever.onrender.com")+"/bank?cancelled=1",metadata:{oeql_product:String(req.params.id),dropship:"true",platform_fee_percent:String(DROPSHIP_FEE_PERCENT),supplier:"printful"}};
-    if(process.env.STRIPE_DESTINATION_ACCOUNT_ID){
+    const params={mode:"payment",line_items:[{price_data:{currency:"usd",product_data:{name:product.title||item.title},unit_amount:Math.max(50,Math.round(Number(product.price||item.price)*100))},quantity:1}],success_url:success,cancel_url:(process.env.PUBLIC_URL||"https://oeql-bank-forever.onrender.com")+"/bank?cancelled=1",metadata:{oeql_product:String(req.params.id),dropship:providerFulfillment?"true":"false",platform_fee_percent:String(DROPSHIP_FEE_PERCENT),supplier:providerFulfillment?"printful":"provider-required",fulfillment:providerFulfillment?"printful":"provider-required"}};
+    if(providerFulfillment && process.env.STRIPE_DESTINATION_ACCOUNT_ID){
       params.payment_intent_data={application_fee_amount:feeCents,transfer_data:{destination:process.env.STRIPE_DESTINATION_ACCOUNT_ID}};
     }
     const s=await stripe.checkout.sessions.create(params);
