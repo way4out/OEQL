@@ -1,0 +1,28 @@
+services:
+  mongodb:
+    image: mongo:8
+    restart: unless-stopped
+    volumes:
+      - mongo:/data/db
+
+  open5gs:
+    image: ghcr.io/open5gs/open5gs:latest
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    # Run this stack on a dedicated VM/edge host with the network privileges
+    # required by the selected Open5GS functions. Do not expose core-plane
+    # interfaces directly to the public Internet.
+    volumes:
+      - ./config:/etc/open5gs:ro
+
+  ran-simulator:
+    image: gradiant/ueransim:latest
+    restart: "no"
+    depends_on:
+      - open5gs
+    profiles: ["lab"]
+    # Lab/simulation only. A real gNB/eNB/SDR is required for physical RF.
+
+volumes:
+  mongo:
