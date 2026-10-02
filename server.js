@@ -250,11 +250,21 @@ async function telnyx(path, options={}) {
 }
 app.get("/api/telecom/status", (_req,res)=>res.json({
   provider:process.env.TELNYX_API_KEY?"telnyx":"not-configured",
-  physical_sim:process.env.PSIM_USERNAME&&process.env.PSIM_PASSWORD?"provider-ready":"provider-credential-required",
+  storefront:process.env.PAYGOSIM_STOREFRONT_URL||null,
+  offer:{activation_one_time:4,monthly:4,currency:"usd",one_tap:true},
+  physical_sim:process.env.PSIM_USERNAME&&process.env.PSIM_PASSWORD&&process.env.PSIM_PLAN_PRICING_ID&&process.env.PSIM_SHIPPING_RATE_ID?"provider-ready":"provider-credential-required",
   physical_sim_provider:"1psim",
   physical_sim_endpoint:process.env.PSIM_API_BASE||"https://1psim.api.lifeline.mobi",
   esim:process.env.TELNYX_API_KEY?"provider-ready":"provider-credential-required",
   service_billing:stripe&&process.env.STRIPE_TELECOM_PRICE_ID?"stripe-live":"not-configured"
+}));
+app.get("/api/telecom/storefront", (_req,res)=>res.json({
+  name:"OEQL Quantum Telecom",
+  storefront:process.env.PAYGOSIM_STOREFRONT_URL||null,
+  offer:{activation_one_time:4,monthly:4,currency:"usd",one_tap:true},
+  esim_checkout:"/api/checkout/telecom/esim",
+  physical_sim_checkout:"/api/checkout/telecom/physical-sim",
+  external_storefront_required_for_provider_catalog:!process.env.PAYGOSIM_STOREFRONT_URL
 }));
 app.post("/api/telecom/esim/purchase", async (req,res)=>{
   try{
