@@ -12,7 +12,7 @@
 <div class="muted">Select a tier, connect Base/Coinbase, then authorize the transaction in your wallet. Payment is sent onchain to the configured Bankr destination; the game records the transaction hash locally.</div>
 <button class="btn pay" style="margin-top:10px" onclick="pay()">1-TAP BUY & PLAY</button>
 </section>
-</main><script>
+<section class="panel"><h2>⚛ Quantum Game Lab</h2><div class="muted">Playable quantum sandbox: superposition, interference, entanglement and measurement are simulated with normalized state amplitudes in the browser.</div><div class="row" style="margin-top:10px"><div><label class="small muted">Qubit</label><select id="qgate"><option>H</option><option>X</option><option>Y</option><option>Z</option></select></div><div><label class="small muted">Target</label><select id="qtarget"><option value="0">Qubit 1</option><option value="1">Qubit 2</option></select></div></div><div class="layers"><button class="btn" onclick="qGate()">Apply gate</button><button class="btn" onclick="qEntangle()">Entangle</button><button class="btn" onclick="qMeasure()">Measure</button><button class="btn" onclick="qReset()">Reset</button></div><div id="qstate" class="small muted" style="margin-top:10px">|00⟩ 100%</div></section></main><script>
 const c=document.getElementById("c"),x=c.getContext("2d");let W,H,t=0;
 function size(){W=c.width=c.clientWidth*devicePixelRatio;H=c.height=c.clientHeight*devicePixelRatio;x.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);W=c.clientWidth;H=c.clientHeight}addEventListener("resize",size);size();
 function loop(){t+=.012;x.clearRect(0,0,W,H);const cx=W/2,cy=H/2;for(let d=0;d<12;d++){const r=45+d*22+Math.sin(t+d)*8; x.beginPath();for(let i=0;i<=120;i++){const a=i/120*Math.PI*2;const z=Math.sin(a*3+t+d)*10;const px=cx+Math.cos(a+t*.2)*r*(1+d*.012);const py=cy+Math.sin(a+t*.2)*r*.45+z;x.lineTo(px,py)}x.strokeStyle="hsla("+(185+d*9)+",90%,70%,"+(0.08+d*.012)+")";x.stroke()}for(let i=0;i<90;i++){const a=i*2.399+t*.15,r=(i%30)*9+70;const px=cx+Math.cos(a)*r,py=cy+Math.sin(a)*r*.52;x.fillStyle="rgba(130,230,255,"+(.12+(i%7)/20)+")";x.fillRect(px,py,1.5,1.5)}requestAnimationFrame(loop)}loop();
@@ -30,4 +30,13 @@ function updateVectors(){
 }
 phaseEl?.addEventListener("input",updateVectors); intensityEl?.addEventListener("input",updateVectors); updateVectors();
 window.addEventListener("load",()=>{if(window.ethereum){ethereum.on?.("accountsChanged",()=>connectBase().catch(()=>{}));ethereum.on?.("chainChanged",()=>connectBase().catch(()=>{}))}});
+</script><script>
+let qs=new Float64Array(8);qs[0]=1;let qMeasured=false;
+function qNorm(){let n=Math.sqrt(Array.from(qs).reduce((a,v)=>a+v*v,0));if(!n)n=1;for(let i=0;i<qs.length;i++)qs[i]/=n}
+function qRender(){let out=[];for(let i=0;i<8;i++){let p=qs[i]*qs[i];if(p>1e-5)out.push("|"+i.toString(2).padStart(3,"0")+"⟩ "+(p*100).toFixed(1)+"%")}document.getElementById("qstate").textContent=out.join(" • ")||"Measured state";}
+function qGate(){let g=document.getElementById("qgate").value,b=Number(document.getElementById("qtarget").value),step=1<<b;for(let i=0;i<8;i++)if((i&step)===0){let j=i|step,a=qs[i],c=qs[j];if(g==="H"){qs[i]=(a+c)/Math.sqrt(2);qs[j]=(a-c)/Math.sqrt(2)}else if(g==="X"){qs[i]=c;qs[j]=a}else if(g==="Y"){qs[i]=-c;qs[j]=a}else{qs[j]=-c}}qNorm();qMeasured=false;qRender()}
+function qEntangle(){qReset();for(let i=0;i<8;i++)qs[i]=0;qs[0]=1/Math.sqrt(2);qs[3]=1/Math.sqrt(2);qRender()}
+function qMeasure(){let r=Math.random(),acc=0,hit=0;for(let i=0;i<8;i++){acc+=qs[i]*qs[i];if(r<=acc){hit=i;break}}qs.fill(0);qs[hit]=1;qMeasured=true;qRender()}
+function qReset(){qs.fill(0);qs[0]=1;qMeasured=false;qRender()}
+qRender();
 </script></body></html>
