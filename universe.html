@@ -59,4 +59,27 @@ function connectArenaRealtime(){
 }
 document.getElementById("createRoom").addEventListener("click",()=>connectArenaRealtime());
 document.addEventListener("keydown",e=>{if(!oeqlWS||oeqlWS.readyState!==1)return;const m={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];if(m){e.preventDefault();oeqlWS.send(JSON.stringify({type:"input",x:m[0],y:m[1]}))}});
+
+<style>
+#immersive{margin-top:18px;display:grid;grid-template-columns:1.4fr .6fr;gap:14px}
+.cardx{background:linear-gradient(145deg,#08101d,#050914);border:1px solid #203552;border-radius:18px;padding:16px;box-shadow:0 12px 40px #0008}
+.cardx h2{margin:0 0 8px;font-size:18px}.meter{height:8px;background:#111b2a;border-radius:99px;overflow:hidden}.meter i{display:block;height:100%;width:72%;background:linear-gradient(90deg,#39d8ff,#a96bff,#47f0a0);animation:pulse 2s infinite}@keyframes pulse{50%{filter:brightness(1.7)}}
+.quest{display:flex;justify-content:space-between;padding:10px;border:1px solid #182943;border-radius:12px;margin:7px 0;background:#07101c}.quest b{color:#dcecff}.small{color:#8fa2ba;font-size:12px}
+@media(max-width:760px){#immersive{grid-template-columns:1fr}}
+</style>
+<section id="immersive">
+<div class="cardx"><h2>🌌 Live World Missions</h2>
+<div class="small">Community objectives dynamically rotate across the shared arena.</div>
+<div class="quest"><span><b>Quantum Rift</b><br><span class="small">Close 3 unstable gates with your squad</span></span><strong>+500 XP</strong></div>
+<div class="quest"><span><b>Resonance Run</b><br><span class="small">Traverse the Schumann-vector field without losing charge</span></span><strong>+350 XP</strong></div>
+<div class="quest"><span><b>Chrono Hunt</b><br><span class="small">Find the hidden temporal relic before the event expires</span></span><strong>+750 XP</strong></div>
+</div>
+<div class="cardx"><h2>⚡ World Energy</h2><div class="meter"><i></i></div><p class="small">72% resonance stability</p><p class="small">Events • Rift / Storm / Surge / Shift</p><p class="small">Mode • Community Expedition</p></div>
+</section>
+<script>
+(()=>{const c=document.querySelector('.stage');if(!c)return;let t=0;
+function fx(){t+=.01;const g=document.createElement('div');}
+setInterval(()=>{document.querySelectorAll('.meter i').forEach(x=>x.style.width=(58+Math.sin(Date.now()/1700)*18)+'%')},80);
+})();
+</script>
 </body></html>
