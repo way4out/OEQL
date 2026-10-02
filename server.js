@@ -99,28 +99,73 @@ app.get("/api/quantum/providers", (_req,res)=>res.json({
   ],
   note:"Physical QPU execution requires an authorized provider account and credentials."
 }));
+async function ibmQuantumToken(){
+  const key=process.env.IBM_QUANTUM_API_KEY;
+  if(!key) throw new Error("IBM_QUANTUM_API_KEY not configured");
+  const r=await fetch("https://iam.cloud.ibm.com/identity/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({grant_type:"urn:ibm:params:oauth:grant-type:apikey",apikey:key}).toString()});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.access_token) throw new Error(j?.errorMessage||j?.error_description||"IBM IAM authentication failed");
+  return j.access_token;
+}
+function ibmQasm(circuit){
+  if(!Array.isArray(circuit)) return null;
+  if(circuit.length===1 && typeof circuit[0]==="string" && circuit[0].includes("OPENQASM")) return circuit[0];
+  let n=1;
+  for(const g of circuit){
+    for(const k of ["qubit","target","control","q","a","b"]) if(Number.isInteger(Number(g?.[k]))) n=Math.max(n,Number(g[k])+1);
+    if(Array.isArray(g?.qubits)) for(const q of g.qubits) n=Math.max(n,Number(q)+1);
+  }
+  const out=["OPENQASM 3.0;","include \"stdgates.inc\";",`bit[${n}] c;`,`qubit[${n}] q;`];
+  for(const g of circuit){
+    const op=String(g?.gate||g?.op||g?.type||"").toLowerCase();
+    const qs=Array.isArray(g?.qubits)?g.qubits.map(Number):[g?.qubit??g?.q??g?.target??0];
+    const a=qs[0]??0,b=qs[1]??g?.control??0;
+    if(op==="h"||op==="x"||op==="y"||op==="z"||op==="s"||op==="t") out.push(`${op} q[${a}];`);
+    else if(op==="cx"||op==="cnot") out.push(`cx q[${Number(g?.control??a)}], q[${Number(g?.target??b)}];`);
+    else if(op==="cz") out.push(`cz q[${Number(g?.control??a)}], q[${Number(g?.target??b)}];`);
+    else if(op==="swap") out.push(`swap q[${a}], q[${b}];`);
+    else if(["rx","ry","rz"].includes(op)) out.push(`${op}(${Number(g?.angle??g?.theta??0)}) q[${a}];`);
+    else if(op==="measure") out.push(`c[${a}] = measure q[${a}];`);
+  }
+  if(!circuit.some(g=>String(g?.gate||g?.op||g?.type||"").toLowerCase()==="measure")) for(let i=0;i<n;i++) out.push(`c[${i}] = measure q[${i}];`);
+  return out.join("\n");
+}
+async function ibmQuantumApi(path, options={}){
+  const token=await ibmQuantumToken();
+  const base=String(process.env.IBM_QUANTUM_API_BASE||"https://quantum.cloud.ibm.com/api/v1").replace(/\/$/,"");
+  const headers={"Accept":"application/json","Authorization":"Bearer "+token,"Service-CRN":process.env.IBM_QUANTUM_SERVICE_CRN,"IBM-API-Version":"2026-04-15","Content-Type":"application/json",...(options.headers||{})};
+  const r=await fetch(base+path,{...options,headers});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j?.message||j?.error||`IBM Quantum API ${r.status}`);
+  return j;
+}
 app.get("/api/quantum/physical", (_req,res)=>res.json({
-  mode:process.env.QUANTUM_PROVIDER_API_URL?"PHYSICAL_PROVIDER_BRIDGE":"CONTROL_PLANE_ONLY",
-  physical_qpu:process.env.QUANTUM_PROVIDER_API_URL?"READY_FOR_AUTHORIZED_PROVIDER":"PROVIDER_REQUIRED",
-  provider:process.env.QUANTUM_PROVIDER_NAME||null,
-  backend:process.env.QUANTUM_PROVIDER_BACKEND||null,
-  authenticated:!!(process.env.QUANTUM_PROVIDER_API_URL&&process.env.QUANTUM_PROVIDER_API_KEY),
+  mode:process.env.IBM_QUANTUM_API_KEY&&process.env.IBM_QUANTUM_SERVICE_CRN?"IBM_QUANTUM":"CONTROL_PLANE_ONLY",
+  physical_qpu:process.env.IBM_QUANTUM_API_KEY&&process.env.IBM_QUANTUM_SERVICE_CRN?"READY_TO_VERIFY":"PROVIDER_REQUIRED",
+  provider:"ibm_quantum",
+  backend:process.env.IBM_QUANTUM_BACKEND||null,
+  authenticated:!!(process.env.IBM_QUANTUM_API_KEY&&process.env.IBM_QUANTUM_SERVICE_CRN),
   qkd:"HARDWARE_PROVIDER_REQUIRED",
   quantum_networking:"HARDWARE_PROVIDER_REQUIRED",
   post_quantum_security:"READY",
-  reality_gate:"Only verified responses from an authorized physical quantum provider are reported as physical execution."
+  reality_gate:"Only verified responses from IBM Quantum are reported as physical execution."
 }));
+app.get("/api/quantum/ibm/backends", async (_req,res)=>{
+  if(!process.env.IBM_QUANTUM_API_KEY||!process.env.IBM_QUANTUM_SERVICE_CRN)return res.status(503).json({error:"ibm_credentials_required"});
+  try{res.json({provider:"ibm_quantum",backends:await ibmQuantumApi("/backends")});}
+  catch(e){res.status(502).json({error:"ibm_backend_query_failed",message:e.message});}
+});
 app.post("/api/quantum/execute", async (req,res)=>{
-  const url=process.env.QUANTUM_PROVIDER_API_URL;
-  if(!url)return res.status(503).json({error:"physical_qpu_provider_required",message:"Configure QUANTUM_PROVIDER_API_URL and QUANTUM_PROVIDER_API_KEY for authorized physical QPU execution.",mode:"CONTROL_PLANE_ONLY"});
+  if(!process.env.IBM_QUANTUM_API_KEY||!process.env.IBM_QUANTUM_SERVICE_CRN)return res.status(503).json({error:"ibm_credentials_required",message:"Configure IBM_QUANTUM_API_KEY and IBM_QUANTUM_SERVICE_CRN in the production runtime."});
   try{
-    const headers={"Content-Type":"application/json"};
-    if(process.env.QUANTUM_PROVIDER_API_KEY)headers.Authorization="Bearer "+process.env.QUANTUM_PROVIDER_API_KEY;
-    const r=await fetch(url,{method:"POST",headers,body:JSON.stringify({circuit:Array.isArray(req.body?.circuit)?req.body.circuit:[],shots:Math.max(1,Math.min(100000,Number(req.body?.shots)||1024)),backend:req.body?.backend||process.env.QUANTUM_PROVIDER_BACKEND||undefined,metadata:req.body?.metadata||{}})});
-    const j=await r.json().catch(()=>({}));
-    if(!r.ok)return res.status(502).json({error:"physical_qpu_provider_error",provider_status:r.status,detail:j});
-    res.status(202).json({mode:"PHYSICAL_PROVIDER",provider:process.env.QUANTUM_PROVIDER_NAME||"authorized-provider",job:j,reality_gate:"Physical execution reported only from the configured authorized provider."});
-  }catch(e){res.status(502).json({error:"physical_qpu_bridge_failed",message:e.message});}
+    const qasm=String(req.body?.qasm||ibmQasm(req.body?.circuit||[]));
+    if(!qasm.includes("OPENQASM"))return res.status(400).json({error:"qasm_or_circuit_required"});
+    const backend=String(req.body?.backend||process.env.IBM_QUANTUM_BACKEND||"");
+    if(!backend)return res.status(400).json({error:"ibm_backend_required"});
+    const shots=Math.max(1,Math.min(100000,Number(req.body?.shots)||1024));
+    const job=await ibmQuantumApi("/jobs",{method:"POST",body:JSON.stringify({program_id:"sampler",backend,params:{pubs:[[qasm]],options:{shots},version:2}})});
+    res.status(202).json({mode:"PHYSICAL_PROVIDER",provider:"ibm_quantum",backend,shots,job,reality_gate:"Physical execution reported only from the verified IBM Quantum job response."});
+  }catch(e){res.status(502).json({error:"ibm_quantum_execution_failed",message:e.message});}
 });
 app.get("/api/quantum/capabilities", (_req,res)=>res.json({
   control_plane:"READY",
@@ -197,8 +242,7 @@ app.get("/api/dropship/catalog",async(req,res)=>{
   }
   const provider=String(req.query.provider||"all");
   const selected=DROPSHIP_PROVIDERS.filter(p=>provider==="all"||p.id===provider);
-  const results=[];
-  for(const p of selected){
+  const results=[];  for(const p of selected){
     if(p.id==="printful"&&p.configured){
       try{
         const r=await fetch("https://api.printful.com/store/products",{headers:{Authorization:"Bearer "+process.env.PRINTFUL_API_TOKEN}});
@@ -397,8 +441,7 @@ app.get("/api/telecom/storefront", (_req,res)=>res.json({
   esim_checkout:"/api/checkout/telecom/esim",
   physical_sim_checkout:"/api/checkout/telecom/physical-sim",
   external_storefront_required_for_provider_catalog:!process.env.PAYGOSIM_STOREFRONT_URL
-}));
-app.post("/api/telecom/esim/purchase", async (req,res)=>{
+}));app.post("/api/telecom/esim/purchase", async (req,res)=>{
   try{
     const body={quantity:Math.max(1,Math.min(10,Number(req.body?.quantity||1))),status:"enabled"};
     if(req.body?.sim_card_group_id) body.sim_card_group_id=req.body.sim_card_group_id;
