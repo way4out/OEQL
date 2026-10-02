@@ -1,13 +1,39 @@
-# OEQL Quantum Fabric
+# OEQL Quantum Fabric — Quantum Control Plane
 
-Deployable digital control-plane for hybrid classical/quantum networking.
+## Purpose
+A practical software control plane for quantum-ready computing, networking, simulation, cryptography, telemetry, and provider orchestration.
 
-Components: QKD adapter interface; interoperable key-management API boundary; PQC/hybrid cryptography; quantum-node registry; trusted-relay/repeater simulation model; quantum-link telemetry; AI-assisted routing/optimization; QR/shareable capability manifests; classical fallback; provider/hardware status gates.
+## Capability layers
+- Quantum computing: provider abstraction for circuit/job submission, result retrieval, calibration metadata, queue telemetry, and classical fallback.
+- Quantum simulation: state-vector/density-matrix and digital-twin interfaces; simulation is explicitly distinct from physical quantum hardware.
+- Quantum networking: QKD/link/node/repeater abstractions, key-management boundaries, topology and routing models, and classical fallback.
+- Quantum-safe security: hybrid classical + post-quantum cryptography integration points, key lifecycle metadata, and capability negotiation.
+- Optimization: resource allocation, routing, scheduling, anomaly detection, and workload selection.
+- Physics models: configurable units, Hamiltonian/observable metadata, uncertainty/provenance fields, and experiment/job records.
+- OS integration: device capability registry, process/task orchestration, storage abstraction, telemetry, policy gates, and provider adapters.
 
-Reality gate: this repository does not claim to create physical photons, entanglement, QKD hardware, quantum memories, quantum repeaters, RF transmitters, or quantum radios from cloud software. Physical QKD requires quantum optical hardware and a compatible channel. Scalable long-distance quantum networking requires additional hardware such as quantum memories/repeaters.
+## Reality gates
+LIVE = connected provider or physical system returned verifiable state.
+READY = software interface implemented but no external resource is connected.
+SIMULATED = model/simulator.
+PROVIDER_REQUIRED = credentials/account configuration missing.
+HARDWARE_REQUIRED = physical equipment required.
 
-The digital control plane targets the layered QKDN model: quantum layer, key-management layer, QKDN control, management, service, and user-network layers.
+Software cannot create physical qubits, entanglement, QKD photons, quantum memories, repeaters, RF spectrum, carrier networks, or a physical universe. Those require actual hardware, facilities, providers, and applicable authorization.
 
-QR manifests may contain a public service ID, HTTPS endpoint, capability profile, protocol version, expiry and signature/reference. Never put private keys, seed phrases, SIM credentials, QKD secrets, or provider tokens in QR payloads.
+## OS mastery model
+OEQL is a cross-platform orchestration layer. Native/device-specific adapters can expose capabilities through one policy-controlled interface without falsely claiming to replace Windows, macOS, Linux, iOS, Android, or firmware.
 
-Status: LIVE means verified physical/provider resource; READY means software interface implemented; SIMULATED means digital test environment; PROVIDER_REQUIRED means authorized provider is needed; HARDWARE_REQUIRED means physical quantum/RF hardware is needed.
+## Verification gate
+1. identify provider/device;
+2. authenticate through an authorized credential;
+3. query live capability/state;
+4. record timestamp and provenance;
+5. expose only verified state as LIVE;
+6. preserve a classical fallback where practical.
+
+## Universe+
+A software namespace for simulations, digital twins, datasets, workloads, experiments, and isolated application contexts. It does not assert alternate physical universes or faster-than-light communication.
+
+## H.I.R.
+Human/AI request orchestration: intake -> authorization -> planning -> provider execution -> verification -> audit -> delivery.
