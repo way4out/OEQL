@@ -401,4 +401,31 @@ app.get("/api/metal-policy", (_req,res)=>res.json({
 app.get("/", (_req,res)=>res.sendFile(process.cwd()+"/bank.html"));
 app.get("/bank", (_req,res)=>res.sendFile(process.cwd()+"/bank.html"));
 app.use(express.static("."));
-app.listen(PORT,"0.0.0.0",()=>console.log("OEQL Forever API listening on "+PORT));
+
+import { WebSocketServer } from "ws";
+const wss = new WebSocketServer({ noServer:true });
+const rooms = new Map();
+function room(code){let r=rooms.get(code);if(!r){r={players:new Map(),tick:0};rooms.set(code,r)}return r}
+function snap(r){return {type:"snapshot",players:[...r.players.values()].map(p=>({id:p.id,name:p.name,role:p.role,x:p.x,y:p.y,score:p.score}))}}
+wss.on("connection",(ws)=>{
+  let current=null, me=null;
+  ws.on("message",(raw)=>{
+    try{
+      const m=JSON.parse(raw.toString());
+      if(m.type==="join"){
+        current=room(String(m.room||"OEQL-PRIME").slice(0,32)); me={id:Math.random().toString(36).slice(2,10),name:String(m.name||"Player").slice(0,24),role:String(m.role||"Explorer").slice(0,24),x:Math.random()*900,y:Math.random()*500,score:0,vx:0,vy:0};
+        current.players.set(me.id,me); ws.send(JSON.stringify({type:"joined",id:me.id,room:[...rooms.entries()].find(([k,v])=>v===current)?.[0],snapshot:snap(current)}));
+        return;
+      }
+      if(!current||!me)return;
+      if(m.type==="input"){me.vx=Math.max(-1,Math.min(1,Number(m.x)||0));me.vy=Math.max(-1,Math.min(1,Number(m.y)||0))}
+      if(m.type==="event"){me.score+=25;for(const p of current.players.values())if(p!==me)p.score+=10}
+    }catch{}
+  });
+  ws.on("close",()=>{if(current&&me){current.players.delete(me.id);if(!current.players.size){for(const [k,v] of rooms)if(v===current)rooms.delete(k)}}});
+});
+setInterval(()=>{for(const r of rooms.values()){for(const p of r.players.values()){p.x=Math.max(0,Math.min(900,p.x+p.vx*7));p.y=Math.max(0,Math.min(500,p.y+p.vy*7))}const data=JSON.stringify(snap(r));for(const ws of wss.clients)if(ws.readyState===1)ws.send(data)}},50);
+const _oldListen=app.listen.bind(app);
+const _server=_oldListen(PORT,"0.0.0.0",()=>console.log("OEQL Forever API listening on "+PORT));
+_server.on("upgrade",(req,socket,head)=>{if(req.url==="/ws"){wss.handleUpgrade(req,socket,head,ws=>wss.emit("connection",ws))}});
+
