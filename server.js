@@ -80,6 +80,38 @@ app.get("/api/quantum/capabilities", (_req,res)=>res.json({
 }));
 app.get("/api/universal/live", (_req,res)=>res.json({timestamp:new Date().toISOString(),mode:"live-event-stream",retroactive:"audit-history-only",forward:"new-events",quantum_transport:"not-claimed",telecom:"provider-backed",capabilities:["web","mobile-web","PWA","payments","telecom","marketplace","tasks","audit","universal-data"]}));
 app.get("/api/views", (_req,res)=>res.json({count:13,views:["Command","Accounts","Payments","Telecom","Marketplace","Tasks","Universe+","UniverseSim+","H.I.R.","Gazette","Security","Audit","Settings"]}));
+const DROPSHIP_PROVIDERS = [
+  {id:"printful",name:"Printful",mode:"api",catalog:"provider-api",fulfillment:"print-pack-ship",configured:!!process.env.PRINTFUL_API_TOKEN,requires:"PRINTFUL_API_TOKEN",official:"https://www.printful.com/site/api"},
+  {id:"spocket",name:"Spocket",mode:"platform",catalog:"external-provider-catalog",fulfillment:"supplier-direct",configured:!!process.env.SPOCKET_API_TOKEN,requires:"SPOCKET_API_TOKEN",official:"https://www.spocket.co/dropshipping"},
+  {id:"generic",name:"Authorized Supplier Adapter",mode:"adapter",catalog:"provider-api",fulfillment:"supplier-direct",configured:!!process.env.GENERIC_DROPSHIP_API_URL,requires:"GENERIC_DROPSHIP_API_URL",official:null}
+];
+const DROPSHIP_FEE_PERCENT=4;
+app.get("/api/dropship/providers",(_req,res)=>res.json({
+  fee_percent:DROPSHIP_FEE_PERCENT,
+  currency:"usd",
+  checkout:"stripe",
+  one_tap:"enabled",
+  providers:DROPSHIP_PROVIDERS.map(p=>({...p,secret_exposed:false})),
+  note:"Provider catalogs and fulfillment are live only when the provider account/credential is configured."
+}));
+app.get("/api/dropship/catalog",async(req,res)=>{
+  const provider=String(req.query.provider||"all");
+  const selected=DROPSHIP_PROVIDERS.filter(p=>provider==="all"||p.id===provider);
+  const results=[];
+  for(const p of selected){
+    if(p.id==="printful"&&p.configured){
+      try{
+        const r=await fetch("https://api.printful.com/store/products",{headers:{Authorization:"Bearer "+process.env.PRINTFUL_API_TOKEN}});
+        const j=await r.json();
+        if(r.ok&&Array.isArray(j.result)) results.push({provider:p.id,status:"LIVE",count:j.result.length,items:j.result});
+        else results.push({provider:p.id,status:"PROVIDER_ERROR",count:0,items:[]});
+      }catch(e){results.push({provider:p.id,status:"PROVIDER_ERROR",count:0,items:[]});}
+    }else{
+      results.push({provider:p.id,status:p.configured?"READY":"PROVIDER_REQUIRED",count:0,items:[]});
+    }
+  }
+  res.json({currency:"usd",fee_percent:DROPSHIP_FEE_PERCENT,providers:results});
+});
 const MARKETPLACE = [
 {id:"quantum-telecom",title:"Quantum Telecom",category:"telecom",price:4,unit:"month",buyable:true,downloadable:false,fulfillment:"authorized carrier/MVNO required",description:"$4/month service enrollment; valid SIM/eSIM delivery requires an authorized telecom provider."},
 {id:"universe-plus",title:"Universe+",category:"software",price:0,buyable:false,downloadable:true,fulfillment:"instant digital access",description:"OEQL universal workspace layer."},
@@ -93,8 +125,8 @@ const SELLABLE_CATALOG=[...MARKETPLACE,...OEQL_444];
 app.get("/api/marketplace/444",(req,res)=>{const limit=Math.max(1,Math.min(500,Number(req.query.limit)||100));const page=Math.max(0,Number(req.query.page)||0);res.json({count:OEQL_444.length,capacity_multiplier:"100x",currency:"USD",page,limit,items:OEQL_444.slice(page*limit,(page+1)*limit).map(x=>({...x,checkout:"/api/buy/"+x.id}))})});
 const TASK_TYPES = ["web build","mobile build","AI build","automation","content","research","legal-document draft","telecom integration","marketplace listing"];
 app.get("/api/buyable",(_req,res)=>res.json({currency:"USD",items:MARKETPLACE.filter(x=>x.buyable).map(x=>({id:x.id,title:x.title,price:x.price,unit:x.unit,checkout:"/api/buy/"+x.id})),provider_gated:MARKETPLACE.filter(x=>!x.buyable).map(x=>({id:x.id,title:x.title,reason:x.fulfillment}))}));
-app.post("/api/buy/:id",async(req,res)=>{if(!stripe)return res.status(503).json({message:"Payment provider not configured."});const item=SELLABLE_CATALOG.find(x=>x.id===String(req.params.id));if(!item)return res.status(404).json({message:"Product not found."});if(!item.buyable)return res.status(409).json({message:"This item is not currently buyable; required fulfillment/provider capability is unavailable.",fulfillment:item.fulfillment});try{const success=(process.env.PUBLIC_URL||"https://oeql-bank-forever.onrender.com")+"/bank?paid=1";const s=await stripe.checkout.sessions.create({mode:item.unit==="month"?"subscription":"payment",line_items:[{price_data:{currency:"usd",product_data:{name:item.title},unit_amount:Math.round(item.price*100)},quantity:1}],...(item.shippable?{shipping_address_collection:{allowed_countries:["US"]}}:{}),success_url:success,cancel_url:(process.env.PUBLIC_URL||"https://oeql-bank-forever.onrender.com")+"/bank?cancelled=1",metadata:{oeql_product:item.id,oeql_catalog:"444"}});res.json({url:s.url})}catch(e){res.status(502).json({message:e.message})}});
-app.get("/api/marketplace", (_req,res)=>res.json({listings:SELLABLE_CATALOG,checkout:"/api/checkout/listing",digital_delivery:"enabled-for-software",physical_shipping:"address collection supported; fulfillment provider required"}));
+app.post("/api/buy/:id",async(req,res)=>{if(!stripe)return res.status(503).json({message:"Payment provider not configured."});const item=SELLABLE_CATALOG.find(x=>x.id===String(req.params.id));if(!item)return res.status(404).json({message:"Product not found."});if(!item.buyable)return res.status(409).json({message:"This item is not currently buyable; required fulfillment/provider capability is unavailable.",fulfillment:item.fulfillment});try{const success=(process.env.PUBLIC_URL||"https://oeql-bank-forever.onrender.com")+"/bank?paid=1";const s=await stripe.checkout.sessions.create({mode:item.unit==="month"?"subscription":"payment",line_items:[{price_data:{currency:"usd",product_data:{name:item.title},unit_amount:Math.round(item.price*100)},quantity:1}],...(item.shippable?{shipping_address_collection:{allowed_countries:["US"]}}:{}),success_url:success,cancel_url:(process.env.PUBLIC_URL||"https://oeql-bank-forever.onrender.com")+"/bank?cancelled=1",metadata:{oeql_product:item.id,oeql_catalog:"444",dropship:"true",platform_fee_percent:String(DROPSHIP_FEE_PERCENT)}});res.json({url:s.url})}catch(e){res.status(502).json({message:e.message})}});
+app.get("/api/marketplace", (_req,res)=>res.json({listings:SELLABLE_CATALOG,checkout:"/api/checkout/listing",digital_delivery:"enabled-for-software",physical_shipping:"address collection supported; fulfillment provider required",dropship_fee_percent:DROPSHIP_FEE_PERCENT,provider_count:DROPSHIP_PROVIDERS.length}));
 app.get("/api/tasks", (_req,res)=>res.json({task_types:TASK_TYPES,workflow:["create","price","authorize","execute","review","deliver"]}));
 app.post("/api/tasks", (req,res)=>{const t=req.body||{};if(!t.title)return res.status(400).json({message:"title required"});res.status(201).json({id:"task_"+Date.now(),status:"queued",title:t.title,type:t.type||"web build",provider:t.provider||"user-selected",note:"Execution requires an authorized provider when applicable."})});
 app.get("/api/telecom/inventory", async (_req,res)=>{
