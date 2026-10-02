@@ -405,27 +405,40 @@ app.use(express.static("."));
 import { WebSocketServer } from "ws";
 const wss = new WebSocketServer({ noServer:true });
 const rooms = new Map();
-function room(code){let r=rooms.get(code);if(!r){r={players:new Map(),tick:0};rooms.set(code,r)}return r}
-function snap(r){return {type:"snapshot",players:[...r.players.values()].map(p=>({id:p.id,name:p.name,role:p.role,x:p.x,y:p.y,score:p.score}))}}
+function room(code){let r=rooms.get(code);if(!r){r={players:new Map(),events:[],seq:0};rooms.set(code,r)}return r}
+function broadcast(r,payload){const data=JSON.stringify(payload);for(const p of r.players.values())if(p.ws.readyState===1)p.ws.send(data)}
+function snap(r){return {type:"snapshot",seq:r.seq,events:r.events.slice(-6),players:[...r.players.values()].map(p=>({id:p.id,name:p.name,role:p.role,x:p.x,y:p.y,score:p.score,hp:p.hp,energy:p.energy}))}}
 wss.on("connection",(ws)=>{
-  let current=null, me=null;
-  ws.on("message",(raw)=>{
-    try{
-      const m=JSON.parse(raw.toString());
-      if(m.type==="join"){
-        current=room(String(m.room||"OEQL-PRIME").slice(0,32)); me={id:Math.random().toString(36).slice(2,10),name:String(m.name||"Player").slice(0,24),role:String(m.role||"Explorer").slice(0,24),x:Math.random()*900,y:Math.random()*500,score:0,vx:0,vy:0};
-        current.players.set(me.id,me); ws.send(JSON.stringify({type:"joined",id:me.id,room:[...rooms.entries()].find(([k,v])=>v===current)?.[0],snapshot:snap(current)}));
-        return;
-      }
-      if(!current||!me)return;
-      if(m.type==="input"){me.vx=Math.max(-1,Math.min(1,Number(m.x)||0));me.vy=Math.max(-1,Math.min(1,Number(m.y)||0))}
-      if(m.type==="event"){me.score+=25;for(const p of current.players.values())if(p!==me)p.score+=10}
-    }catch{}
-  });
-  ws.on("close",()=>{if(current&&me){current.players.delete(me.id);if(!current.players.size){for(const [k,v] of rooms)if(v===current)rooms.delete(k)}}});
+ let current=null,me=null;
+ ws.on("message",(raw)=>{
+  try{
+   const m=JSON.parse(raw.toString());
+   if(m.type==="join"){
+    const code=String(m.room||"OEQL-PRIME").replace(/[^A-Za-z0-9_-]/g,"").slice(0,32)||"OEQL-PRIME";
+    current=room(code);
+    if(current.players.size>=64){ws.send(JSON.stringify({type:"error",error:"room_full"}));return}
+    me={id:Math.random().toString(36).slice(2,10),name:String(m.name||"Player").slice(0,24),role:String(m.role||"Explorer").slice(0,24),x:100+Math.random()*700,y:80+Math.random()*360,score:0,hp:100,energy:100,vx:0,vy:0,ws};
+    current.players.set(me.id,me);current.seq++;
+    ws.send(JSON.stringify({type:"joined",id:me.id,room:code,capacity:64,snapshot:snap(current)}));
+    broadcast(current,{type:"system",message:me.name+" entered the arena",seq:current.seq});
+    return;
+   }
+   if(!current||!me)return;
+   if(m.type==="input"){
+    me.vx=Math.max(-1,Math.min(1,Number(m.x)||0));me.vy=Math.max(-1,Math.min(1,Number(m.y)||0));
+   } else if(m.type==="event"){
+    const kinds=["Quantum Rift","Resonance Surge","Entanglement Storm","Chrono Shift"];
+    const event=kinds[Math.max(0,Math.min(kinds.length-1,Number(m.index)||0))];
+    me.score+=50;me.energy=Math.min(100,me.energy+10);current.seq++;
+    current.events.push({event,player:me.name,at:Date.now(),seq:current.seq});
+    if(current.events.length>20)current.events.shift();
+    broadcast(current,{type:"event",event,player:me.name,seq:current.seq});
+   }
+  }catch{}
+ });
+ ws.on("close",()=>{if(current&&me){current.players.delete(me.id);current.seq++;broadcast(current,{type:"system",message:me.name+" left the arena",seq:current.seq});if(!current.players.size)rooms.delete([...rooms.entries()].find(([k,v])=>v===current)?.[0])}});
 });
-setInterval(()=>{for(const r of rooms.values()){for(const p of r.players.values()){p.x=Math.max(0,Math.min(900,p.x+p.vx*7));p.y=Math.max(0,Math.min(500,p.y+p.vy*7))}const data=JSON.stringify(snap(r));for(const ws of wss.clients)if(ws.readyState===1)ws.send(data)}},50);
+setInterval(()=>{for(const r of rooms.values()){for(const p of r.players.values()){p.x=Math.max(30,Math.min(870,p.x+p.vx*7));p.y=Math.max(30,Math.min(470,p.y+p.vy*7));p.energy=Math.max(0,p.energy-.04)}r.seq++;broadcast(r,snap(r))}},50);
 const _oldListen=app.listen.bind(app);
 const _server=_oldListen(PORT,"0.0.0.0",()=>console.log("OEQL Forever API listening on "+PORT));
 _server.on("upgrade",(req,socket,head)=>{if(req.url==="/ws"){wss.handleUpgrade(req,socket,head,ws=>wss.emit("connection",ws))}});
-
