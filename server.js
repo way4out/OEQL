@@ -47,6 +47,14 @@ const TASK_TYPES = ["web build","mobile build","AI build","automation","content"
 app.get("/api/marketplace", (_req,res)=>res.json({listings:MARKETPLACE,checkout:"/api/checkout/listing",digital_delivery:"enabled-for-software",physical_shipping:"provider-required"}));
 app.get("/api/tasks", (_req,res)=>res.json({task_types:TASK_TYPES,workflow:["create","price","authorize","execute","review","deliver"]}));
 app.post("/api/tasks", (req,res)=>{const t=req.body||{};if(!t.title)return res.status(400).json({message:"title required"});res.status(201).json({id:"task_"+Date.now(),status:"queued",title:t.title,type:t.type||"web build",provider:t.provider||"user-selected",note:"Execution requires an authorized provider when applicable."})});
+app.get("/api/telecom/inventory", async (_req,res)=>{
+  const configured=!!process.env.TELNYX_API_KEY;
+  if(!configured) return res.json({status:"PROVIDER_REQUIRED",live:false,inventory:{esim:{available:null,reservable:false},physical_sim:{available:null,reservable:false}},message:"Connect an authorized telecom provider credential to expose real-time provider inventory."});
+  try{
+    const out=await telnyx("/sim_cards?page[size]=1",{method:"GET"});
+    res.json({status:"LIVE",live:true,provider:"telnyx",inventory:{esim:{available:"provider-api",reservable:true},physical_sim:{available:"provider-api",reservable:true}},provider_snapshot:out});
+  }catch(e){res.status(503).json({status:"PROVIDER_ERROR",live:false,message:e.message});}
+});
 app.get("/api/telecom/catalog", (_req,res)=>res.json({
   currency:"usd",
   plans:{
