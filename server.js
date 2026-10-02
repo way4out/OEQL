@@ -3,13 +3,40 @@ import Stripe from "stripe";
 
 const app = express();
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
-app.post("/api/stripe/webhook", express.raw({type:"application/json"}), (req,res)=>{
+async function submitPrintfulOrderFromSession(session){
+  if(!process.env.PRINTFUL_API_TOKEN) throw new Error("PRINTFUL_API_TOKEN not configured");
+  const productId=String(session.metadata?.oeql_product||"");
+  if(!productId) throw new Error("Missing OEQL product metadata");
+  const mapping=globalThis.__oeqlPrintfulMappings?.[productId];
+  if(!mapping?.variant_id) throw new Error("No Printful variant mapping for "+productId);
+  const a=session.shipping_details?.address;
+  const name=session.shipping_details?.name;
+  if(!a||!name) throw new Error("Shipping address missing");
+  const payload={external_id:"oeql_"+session.id,shipping:"STANDARD",recipient:{name,address1:a.line1||"",address2:a.line2||undefined,city:a.city||"",state_code:a.state||undefined,country_code:a.country||"US",zip:a.postal_code||""},items:[{variant_id:Number(mapping.variant_id),quantity:1}]};
+  const r=await fetch("https://api.printful.com/orders?confirm=1",{method:"POST",headers:{"Authorization":"Bearer "+process.env.PRINTFUL_API_TOKEN,"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  const j=await r.json();
+  if(!r.ok) throw new Error(j?.result?.error?.message||j?.error?.message||"Printful order submission failed");
+  globalThis.__oeqlFulfillmentOrders=globalThis.__oeqlFulfillmentOrders||{};
+  globalThis.__oeqlFulfillmentOrders[session.id]={provider:"printful",oeql_product:productId,printful_order:j.result?.id||null,status:j.result?.status||"submitted",created_at:new Date().toISOString()};
+  return j.result;
+}
+app.post("/api/stripe/webhook", express.raw({type:"application/json"}), async (req,res)=>{
   if(!stripe || !process.env.STRIPE_WEBHOOK_SECRET) return res.status(503).json({error:"stripe_webhook_not_configured"});
   try {
     const event=stripe.webhooks.constructEvent(req.body,req.headers["stripe-signature"],process.env.STRIPE_WEBHOOK_SECRET);
     globalThis.__oeqlPaymentEvents=globalThis.__oeqlPaymentEvents||[];
     globalThis.__oeqlPaymentEvents.unshift({id:event.id,type:event.type,created:event.created,received_at:new Date().toISOString(),status:["payment_intent.payment_failed","invoice.payment_failed","charge.failed"].includes(event.type)?"failed":"received"});
     globalThis.__oeqlPaymentEvents=globalThis.__oeqlPaymentEvents.slice(0,200);
+    if(event.type==="checkout.session.completed"){
+      const session=event.data.object;
+      if(session.payment_status==="paid" && session.metadata?.dropship==="true"){
+        try{await submitPrintfulOrderFromSession(session);}
+        catch(e){
+          globalThis.__oeqlFulfillmentOrders=globalThis.__oeqlFulfillmentOrders||{};
+          globalThis.__oeqlFulfillmentOrders[session.id]={provider:"printful",status:"FULFILLMENT_ERROR",error:e.message,created_at:new Date().toISOString()};
+        }
+      }
+    }
     res.json({received:true});
   } catch(e) { res.status(400).json({error:"invalid_webhook",message:e.message}); }
 });
@@ -86,6 +113,29 @@ const DROPSHIP_PROVIDERS = [
   {id:"generic",name:"Authorized Supplier Adapter",mode:"adapter",catalog:"provider-api",fulfillment:"supplier-direct",configured:!!process.env.GENERIC_DROPSHIP_API_URL,requires:"GENERIC_DROPSHIP_API_URL",official:null}
 ];
 const DROPSHIP_FEE_PERCENT=4;
+app.get("/api/dropship/orders/:checkoutSessionId",async(req,res)=>{
+  const id=String(req.params.checkoutSessionId);
+  const local=globalThis.__oeqlFulfillmentOrders?.[id];
+  if(local?.printful_order&&process.env.PRINTFUL_API_TOKEN){
+    try{
+      const r=await fetch("https://api.printful.com/orders/"+encodeURIComponent(local.printful_order),{headers:{Authorization:"Bearer "+process.env.PRINTFUL_API_TOKEN}});
+      const j=await r.json();
+      if(r.ok&&j.result) return res.json({checkout_session:id,provider:"printful",order:j.result});
+    }catch{}
+  }
+  res.json({checkout_session:id,order:local||null});
+});
+app.post("/api/dropship/printful/webhook",async(req,res)=>{
+  const body=req.body||{};
+  const order=body.data?.order||body.data?.shipment?.order;
+  const externalId=order?.external_id;
+  if(externalId){
+    const sid=String(externalId).replace(/^oeql_/,"");
+    globalThis.__oeqlFulfillmentOrders=globalThis.__oeqlFulfillmentOrders||{};
+    globalThis.__oeqlFulfillmentOrders[sid]={...(globalThis.__oeqlFulfillmentOrders[sid]||{}),provider:"printful",status:order.status||body.type,webhook_type:body.type,tracking_number:body.data?.shipment?.tracking_number||body.data?.package?.tracking_number||null,tracking_url:body.data?.shipment?.tracking_url||body.data?.package?.tracking_url||null,updated_at:new Date().toISOString()};
+  }
+  res.status(200).json({received:true});
+});
 app.get("/api/dropship/providers",(_req,res)=>res.json({
   fee_percent:DROPSHIP_FEE_PERCENT,
   currency:"usd",
@@ -95,6 +145,25 @@ app.get("/api/dropship/providers",(_req,res)=>res.json({
   note:"Provider catalogs and fulfillment are live only when the provider account/credential is configured."
 }));
 app.get("/api/dropship/catalog",async(req,res)=>{
+  if(String(req.query.provider||"all")==="printful"&&process.env.PRINTFUL_API_TOKEN){
+    try{
+      const r=await fetch("https://api.printful.com/store/products",{headers:{Authorization:"Bearer "+process.env.PRINTFUL_API_TOKEN}});
+      const j=await r.json();
+      if(r.ok&&Array.isArray(j.result)){
+        globalThis.__oeqlPrintfulMappings=globalThis.__oeqlPrintfulMappings||{};
+        const items=j.result.map((p,i)=>{
+          const variants=Array.isArray(p.sync_variants)?p.sync_variants:[];
+          const v=variants.find(x=>x.synced&&x.variant_id)||variants[0];
+          const id="pf-"+String(p.id);
+          const price=Number(p.retail_price||v?.retail_price||0);
+          const item={id,title:p.name||"Printful Product "+p.id,price,unit:"each",buyable:!!v?.variant_id,shippable:true,fulfillment:"printful",provider:"printful",printful_product_id:p.id,variant_id:v?.variant_id||null,description:"Live Printful synced product"};
+          if(v?.variant_id) globalThis.__oeqlPrintfulMappings[id]={variant_id:v.variant_id,title:item.title,price};
+          return item;
+        });
+        return res.json({currency:"usd",fee_percent:DROPSHIP_FEE_PERCENT,providers:[{provider:"printful",status:"LIVE",count:items.length,items}]});
+      }
+    }catch{}
+  }
   const provider=String(req.query.provider||"all");
   const selected=DROPSHIP_PROVIDERS.filter(p=>provider==="all"||p.id===provider);
   const results=[];
@@ -125,7 +194,26 @@ const SELLABLE_CATALOG=[...MARKETPLACE,...OEQL_444];
 app.get("/api/marketplace/444",(req,res)=>{const limit=Math.max(1,Math.min(500,Number(req.query.limit)||100));const page=Math.max(0,Number(req.query.page)||0);res.json({count:OEQL_444.length,capacity_multiplier:"100x",currency:"USD",page,limit,items:OEQL_444.slice(page*limit,(page+1)*limit).map(x=>({...x,checkout:"/api/buy/"+x.id}))})});
 const TASK_TYPES = ["web build","mobile build","AI build","automation","content","research","legal-document draft","telecom integration","marketplace listing"];
 app.get("/api/buyable",(_req,res)=>res.json({currency:"USD",items:MARKETPLACE.filter(x=>x.buyable).map(x=>({id:x.id,title:x.title,price:x.price,unit:x.unit,checkout:"/api/buy/"+x.id})),provider_gated:MARKETPLACE.filter(x=>!x.buyable).map(x=>({id:x.id,title:x.title,reason:x.fulfillment}))}));
-app.post("/api/buy/:id",async(req,res)=>{if(!stripe)return res.status(503).json({message:"Payment provider not configured."});const item=SELLABLE_CATALOG.find(x=>x.id===String(req.params.id));if(!item)return res.status(404).json({message:"Product not found."});if(!item.buyable)return res.status(409).json({message:"This item is not currently buyable; required fulfillment/provider capability is unavailable.",fulfillment:item.fulfillment});try{const success=(process.env.PUBLIC_URL||"https://oeql-bank-forever.onrender.com")+"/bank?paid=1";const s=await stripe.checkout.sessions.create({mode:item.unit==="month"?"subscription":"payment",line_items:[{price_data:{currency:"usd",product_data:{name:item.title},unit_amount:Math.round(item.price*100)},quantity:1}],...(item.shippable?{shipping_address_collection:{allowed_countries:["US"]}}:{}),success_url:success,cancel_url:(process.env.PUBLIC_URL||"https://oeql-bank-forever.onrender.com")+"/bank?cancelled=1",metadata:{oeql_product:item.id,oeql_catalog:"444",dropship:"true",platform_fee_percent:String(DROPSHIP_FEE_PERCENT)}});res.json({url:s.url})}catch(e){res.status(502).json({message:e.message})}});
+app.post("/api/buy/:id",async(req,res)=>{
+  if(!stripe)return res.status(503).json({message:"Payment provider not configured."});
+  const item=SELLABLE_CATALOG.find(x=>x.id===String(req.params.id));
+  const pf=globalThis.__oeqlPrintfulMappings?.[String(req.params.id)];
+  if(!item&&!pf)return res.status(404).json({message:"Product not found."});
+  if(String(req.params.id).startsWith("pf-")&&!pf)return res.status(409).json({message:"Printful product mapping unavailable."});
+  if(item&&!item.buyable)return res.status(409).json({message:"This item is not currently buyable; required fulfillment/provider capability is unavailable.",fulfillment:item.fulfillment});
+  if(item?.shippable&&!pf)return res.status(409).json({message:"Physical fulfillment mapping required before checkout.",fulfillment:"provider-required"});
+  try{
+    const product=pf||item;
+    const success=(process.env.PUBLIC_URL||"https://oeql-bank-forever.onrender.com")+"/bank?paid=1";
+    const feeCents=Math.round(Number(product.price||item?.price||0)*100*DROPSHIP_FEE_PERCENT/100);
+    const params={mode:"payment",line_items:[{price_data:{currency:"usd",product_data:{name:product.title||item.title},unit_amount:Math.round(Number(product.price||item.price)*100)},quantity:1}],shipping_address_collection:{allowed_countries:["US"]},success_url:success,cancel_url:(process.env.PUBLIC_URL||"https://oeql-bank-forever.onrender.com")+"/bank?cancelled=1",metadata:{oeql_product:String(req.params.id),dropship:"true",platform_fee_percent:String(DROPSHIP_FEE_PERCENT),supplier:"printful"}};
+    if(process.env.STRIPE_DESTINATION_ACCOUNT_ID){
+      params.payment_intent_data={application_fee_amount:feeCents,transfer_data:{destination:process.env.STRIPE_DESTINATION_ACCOUNT_ID}};
+    }
+    const s=await stripe.checkout.sessions.create(params);
+    res.json({url:s.url,platform_fee_percent:DROPSHIP_FEE_PERCENT,fee_applied:!!process.env.STRIPE_DESTINATION_ACCOUNT_ID});
+  }catch(e){res.status(502).json({message:e.message})}
+});
 app.get("/api/marketplace", (_req,res)=>res.json({listings:SELLABLE_CATALOG,checkout:"/api/checkout/listing",digital_delivery:"enabled-for-software",physical_shipping:"address collection supported; fulfillment provider required",dropship_fee_percent:DROPSHIP_FEE_PERCENT,provider_count:DROPSHIP_PROVIDERS.length}));
 app.get("/api/tasks", (_req,res)=>res.json({task_types:TASK_TYPES,workflow:["create","price","authorize","execute","review","deliver"]}));
 app.post("/api/tasks", (req,res)=>{const t=req.body||{};if(!t.title)return res.status(400).json({message:"title required"});res.status(201).json({id:"task_"+Date.now(),status:"queued",title:t.title,type:t.type||"web build",provider:t.provider||"user-selected",note:"Execution requires an authorized provider when applicable."})});
