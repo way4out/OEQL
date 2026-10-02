@@ -1,1 +1,23 @@
-{"name":"OEQL Forever","short_name":"OEQL","start_url":"/bank","scope":"/","display":"standalone","background_color":"#050816","theme_color":"#42e8ff","description":"OEQL Forever responsive universal web and mobile application","icons":[]}
+{
+  "name": "OEQL Forever",
+  "short_name": "OEQL",
+  "start_url": "/bank",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050816",
+  "theme_color": "#42e8ff",
+  "description": "OEQL Forever responsive universal web and mobile application",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ]
+}
