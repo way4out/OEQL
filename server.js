@@ -33,6 +33,15 @@ app.get("/api/device/capabilities", (_req,res)=>res.json({timestamp:new Date().t
 app.get("/api/legal-entity", (_req,res)=>res.json({legal_name:"StellarNet LLC",owner:"Tucker Martin",principal_city:"Mesa",principal_state:"AZ",principal_zip:"85210",mailing_address:"Mesa, AZ 85210",address_note:"No street address was supplied to this application; do not fabricate one.",legal_notice:"https://www.stellarnetllc.com/legal-notice/"}));
 app.get("/api/status", (_req,res)=>res.json({protocol:"oeql",namespace:"oeql://.forever",status:"operational-orchestration",financial_provider:stripe?"stripe-configured":"not-configured",payments:stripe?"stripe-configured":"not-configured",telecom_fulfillment:process.env.TELECOM_PROVIDER?"configured":"provider-required",treasury:"provider-gated",metals:"custodian-gated",lending:"licensed-provider-gated"}));
 app.get("/api/payments/failures", (_req,res)=>res.json({source:stripe?"stripe-webhook":"not-configured",realtime:!!(stripe&&process.env.STRIPE_WEBHOOK_SECRET),events:globalThis.__oeqlPaymentEvents||[],note:"Configure a Stripe webhook endpoint for authoritative real-time failure events."}));
+app.get("/api/quantum/providers", (_req,res)=>res.json({
+  policy:"vendor_agnostic",
+  providers:[
+    {id:"ibm_quantum",status:process.env.IBM_QUANTUM_API_KEY&&process.env.IBM_QUANTUM_SERVICE_CRN?"CONFIGURED":"PROVIDER_REQUIRED",api:"IBM Quantum Compute Service",capabilities:["backends","jobs","sessions","sampler","estimator"]},
+    {id:"generic_qpu",status:"READY",capabilities:["provider_adapter","backend_registry","job_interface"]},
+    {id:"simulator",status:"READY",capabilities:["state_vector","density_matrix","noise_models","observables"]}
+  ],
+  note:"Physical QPU execution requires an authorized provider account and credentials."
+}));
 app.get("/api/quantum/capabilities", (_req,res)=>res.json({
   control_plane:"READY",
   physics_modeling:["state-vector","density-matrix","Hamiltonian","observables","uncertainty","provenance"],
