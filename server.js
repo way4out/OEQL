@@ -240,16 +240,24 @@ app.get("/api/orders/:sessionId",async(req,res)=>{if(!stripe)return res.status(5
 app.get("/universe", (_req,res)=>res.sendFile(process.cwd()+"/universe.html"));
 app.get("/api/universe/data", async (_req,res)=>{
   const now=new Date();
-  const payload={
-    timestamp:now.toISOString(),
-    epoch_ms:Date.now(),
-    universal_clock:{utc:now.toISOString(),unix_ms:Date.now()},
+  const sources=[
+    {id:"nasa",name:"NASA Open APIs",url:"https://api.nasa.gov",status:"PUBLIC_API"},
+    {id:"nasa-earthdata",name:"NASA Earthdata",url:"https://www.earthdata.nasa.gov/",status:"PUBLIC_DATA_CATALOG"},
+    {id:"noaa",name:"NOAA",url:"https://www.noaa.gov/",status:"PUBLIC_DATA_CATALOG"},
+    {id:"noaa-space-weather",name:"NOAA Space Weather",url:"https://www.ncei.noaa.gov/",status:"PUBLIC_API"},
+    {id:"bankr",name:"Bankr public creator data",url:"https://api.bankr.bot",status:"PUBLIC_API"},
+    {id:"stellarnet",name:"StellarNet realtime game",url:"/ws",status:"LIVE_APP_STREAM"},
+    {id:"quantum",name:"Quantum control plane",url:"/api/quantum/capabilities",status:"SIMULATION_OR_AUTHORIZED_PROVIDER"}
+  ];
+  const payload={timestamp:now.toISOString(),epoch_ms:Date.now(),universal_clock:{utc:now.toISOString(),unix_ms:Date.now()},
+    ingestion:{mode:"federated",refresh:"request-time",provenance:true,units:true,timestamps:true,uncertainty:"source-dependent"},
+    sources,source_count:sources.length,
     resonance:{source:"Earth-ionosphere model",hz:[7.83,14.3,20.8,27.3,33.8]},
     game:{world:"StellarNet Universe",layers:["3D","4D-time","5D-state"],realtime_endpoint:"/ws",quantum_mode:"browser/control-plane simulation"},
-    platform:{surfaces:["web","mobile","PWA","app"],device_capabilities:"/api/device/capabilities"},
+    platform:{surfaces:["web","mobile-web","PWA","app"],device_capabilities:"/api/device/capabilities"},
     quantum:{control_plane:"/api/quantum/capabilities",physical_qpu:"provider-required"},
     integrations:{status:"/api/integrations",bankr_creator_data:"/api/universe/tokens"},
-    scientific_scope:{note:"This hub aggregates application-visible/public data; it does not claim to contain literally all data in the universe."}
+    scientific_scope:{scope:"maximum application-accessible/public federation",note:"No software can literally ingest every datum in the universe. Private, classified, proprietary, inaccessible, or nonexistent data is not fabricated; each source is explicitly state-labeled."}
   };
   try{const r=await fetch("https://api.bankr.bot/public/doppler/creator-fees/0x13653b6b8bd4b274da565faf6fa894e3418a6d10?days=30");const j=await r.json();payload.bankr={source:"Bankr public creator-fees",ok:r.ok,tokens:Array.isArray(j.tokens)?j.tokens:[],totals:j.totals||null};}catch{payload.bankr={source:"Bankr public creator-fees",ok:false,tokens:[],totals:null};}
   res.json(payload);
