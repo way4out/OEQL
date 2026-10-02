@@ -189,7 +189,7 @@ const MARKETPLACE = [
 {id:"gazette",title:"Gazette",category:"publishing",price:0,buyable:false,downloadable:true,fulfillment:"instant digital access",description:"Publishing and public-information workspace."},
 {id:"ai-builds",title:"AI Build Marketplace",category:"services",price:0,buyable:false,downloadable:false,fulfillment:"provider-gated",description:"Task intake for AI-assisted builds; third-party AI execution requires the selected provider."}
 ];
-const OEQL_444=Array.from({length:44400},(_,i)=>{const n=String(i+1).padStart(5,"0"),price=Number((4+(i%97)*1.25).toFixed(2));return{id:"oeql-"+n,title:"OEQL Sellable "+n,category:"marketplace",price,unit:"each",buyable:true,shippable:true,fulfillment:"provider-required",description:"Individual OEQL marketplace SKU "+n+" with its own retail price."}});
+const OEQL_444=Array.from({length:44400},(_,i)=>{const n=String(i+1).padStart(5,"0"),price=Number((4+(i%97)*1.25).toFixed(2));return{id:"oeql-"+n,title:"OEQL Marketplace Item "+n,category:"marketplace",price,unit:"each",buyable:true,shippable:true,fulfillment:"provider-required",description:"Individual OEQL marketplace SKU "+n+" with its own retail price."}});
 const SELLABLE_CATALOG=[...MARKETPLACE,...OEQL_444];
 app.get("/api/marketplace/444",(req,res)=>{const limit=Math.max(1,Math.min(500,Number(req.query.limit)||100));const page=Math.max(0,Number(req.query.page)||0);res.json({count:OEQL_444.length,capacity_multiplier:"100x",currency:"USD",page,limit,items:OEQL_444.slice(page*limit,(page+1)*limit).map(x=>({...x,checkout:"/api/buy/"+x.id}))})});
 const TASK_TYPES = ["web build","mobile build","AI build","automation","content","research","legal-document draft","telecom integration","marketplace listing"];
