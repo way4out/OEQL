@@ -33,6 +33,50 @@ app.get("/api/tasks", (_req,res)=>res.json({task_types:TASK_TYPES,workflow:["cre
 app.post("/api/tasks", (req,res)=>{const t=req.body||{};if(!t.title)return res.status(400).json({message:"title required"});res.status(201).json({id:"task_"+Date.now(),status:"queued",title:t.title,type:t.type||"web build",provider:t.provider||"user-selected",note:"Execution requires an authorized provider when applicable."})});
 app.post("/api/checkout/telecom", async (_req,res)=>{if(!stripe)return res.status(503).json({message:"Configure STRIPE_SECRET_KEY on the backend."});try{let price=process.env.STRIPE_TELECOM_PRICE_ID;if(!price)return res.status(503).json({message:"Configure STRIPE_TELECOM_PRICE_ID for the $4/month plan."});let s=await stripe.checkout.sessions.create({mode:"subscription",line_items:[{price,quantity:1}],success_url:(process.env.PUBLIC_URL||"https://oeql.onrender.com")+"/?paid=1",cancel_url:(process.env.PUBLIC_URL||"https://oeql.onrender.com")+"/?cancelled=1"});res.json({url:s.url})}catch(e){res.status(502).json({message:e.message})}});
 app.post("/api/checkout/listing", async (req,res)=>{if(!stripe)return res.status(503).json({message:"Payment provider not configured."});try{let s=await stripe.checkout.sessions.create({mode:"payment",line_items:[{price_data:{currency:"usd",product_data:{name:"OEQL Marketplace Item"},unit_amount:Math.max(50,Math.round(Number(req.body?.amount||0)*100))},quantity:1}],success_url:(process.env.PUBLIC_URL||"https://oeql.onrender.com")+"/?paid=1",cancel_url:(process.env.PUBLIC_URL||"https://oeql.onrender.com")+"/?cancelled=1"});res.json({url:s.url})}catch(e){res.status(502).json({message:e.message})}});
+
+// Telecom fulfillment adapter: real SIM/eSIM provisioning only when an authorized provider credential is configured.
+async function telnyx(path, options={}) {
+  const key=process.env.TELNYX_API_KEY;
+  if(!key) throw new Error("TELNYX_API_KEY not configured");
+  const r=await fetch("https://api.telnyx.com/v2"+path,{...options,headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json",...(options.headers||{})}});
+  const j=await r.json();
+  if(!r.ok) throw new Error(j?.errors?.[0]?.detail||j?.message||"Telecom provider error");
+  return j;
+}
+app.get("/api/telecom/status", (_req,res)=>res.json({
+  provider:process.env.TELNYX_API_KEY?"telnyx":"not-configured",
+  physical_sim:process.env.TELNYX_API_KEY?"provider-ready":"provider-credential-required",
+  esim:process.env.TELNYX_API_KEY?"provider-ready":"provider-credential-required",
+  service_billing:stripe&&process.env.STRIPE_TELECOM_PRICE_ID?"stripe-live":"not-configured"
+}));
+app.post("/api/telecom/esim/purchase", async (req,res)=>{
+  try{
+    const body={quantity:Math.max(1,Math.min(10,Number(req.body?.quantity||1))),status:"enabled"};
+    if(req.body?.sim_card_group_id) body.sim_card_group_id=req.body.sim_card_group_id;
+    if(req.body?.tags) body.tags=req.body.tags;
+    const out=await telnyx("/actions/purchase/esims",{method:"POST",body:JSON.stringify(body)});
+    res.status(201).json({provider:"telnyx",result:out});
+  }catch(e){res.status(503).json({error:"esim_provider_required",message:e.message});}
+});
+app.post("/api/telecom/physical-sim/order", async (req,res)=>{
+  if(!process.env.PHYSICAL_SIM_FULFILLMENT_URL) return res.status(503).json({error:"physical_sim_fulfillment_required",message:"Configure an authorized physical-SIM fulfillment/shipping provider before accepting payment for physical SIM orders.",checkout_available:false});
+  try{
+    const out=await fetch(process.env.PHYSICAL_SIM_FULFILLMENT_URL,{method:"POST",headers:{"Content-Type":"application/json","Authorization":process.env.PHYSICAL_SIM_FULFILLMENT_TOKEN?("Bearer "+process.env.PHYSICAL_SIM_FULFILLMENT_TOKEN):""},body:JSON.stringify({product:"oeql-quantum-telecom-sim",quantity:Math.max(1,Math.min(10,Number(req.body?.quantity||1))),shipping_address:req.body?.shipping_address||null})});
+    const j=await out.json(); if(!out.ok) throw new Error(j?.message||"Fulfillment provider rejected order");
+    res.status(201).json({fulfillment:j});
+  }catch(e){res.status(503).json({error:"physical_sim_fulfillment_error",message:e.message});}
+});
+app.get("/api/contracts/templates", (_req,res)=>res.json({notice:"Templates require human/legal review before use.",templates:[
+{id:"service-terms",title:"AI / Software Service Terms",scope:"software, AI-assisted builds, marketplace services"},
+{id:"telecom-terms",title:"Telecom Service Terms",scope:"connectivity, SIM/eSIM, acceptable use, privacy, cancellation"},
+{id:"marketplace-seller",title:"Marketplace Seller Agreement",scope:"seller listings, fulfillment, refunds, IP, prohibited goods"},
+{id:"contractor-ai",title:"AI Contractor / Provider Terms",scope:"task delegation, deliverables, confidentiality, IP, human review"}
+]}));
+app.get("/api/ai/providers", (_req,res)=>res.json({mode:"provider-agnostic",configured:{
+stripe:!!stripe,telnyx:!!process.env.TELNYX_API_KEY,ai:!!process.env.AI_PROVIDER_API_KEY
+},policy:"Only authorized providers are invoked; no arbitrary third-party account access is assumed."}));
+app.get("/api/rollin", (_req,res)=>res.json({status:"integrated-marketplace-layer",repository:"way4out/Rollin",features:["listings","orders","seller workflows","digital delivery","shipping workflow"]}));
+
 app.get("/api/tiers", (_req,res)=>res.json({company:"StellarNet LLC",product:"OEQL Forever Bank application services",regulated_financial_product:false,tiers:SERVICE_TIERS}));
 app.get("/api/legal-status", (_req,res)=>res.json({application_layer:"deployed",deposit_taking:"not_authorized",card_issuance:"issuer-required",money_transmission:"licensed-provider-required",fdic_insurance:"not claimed",bank_charter:"not claimed"}));
 app.get("/api/provider/stripe", async (_req,res)=>{
