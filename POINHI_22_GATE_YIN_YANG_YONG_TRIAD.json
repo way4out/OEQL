@@ -1,0 +1,48 @@
+{
+  "version":"POINHI-22-GATE-YIN-YANG-YONG-TRIAD",
+  "chain":{"name":"Base Mainnet","chainId":8453},
+  "status":"ARCHITECTURE_COMMITTED",
+  "concept":{
+    "yin":"inbound/observe/authorize",
+    "yang":"outbound/execute/settle",
+    "yong":"bridge/synchronize/reconcile",
+    "note":"Yong is a software architecture label for the third synchronization lane; it does not assert a physical quantum phenomenon."
+  },
+  "token_lanes":{
+    "total_lanes":23,
+    "triad_groups":11,
+    "primary_lane":"POINHI",
+    "additional_lanes":11,
+    "binding":"dynamic verified Bankr registry at runtime",
+    "rule":"No token is treated as active until chain, contract, symbol, decimals, liquidity/quote source and timestamp are verified."
+  },
+  "gate_architecture":{
+    "gate_count":22,
+    "gates":{
+      "G01":"Identity","G02":"POINHI Holder","G03":"NFTQR","G04":"Payments","G05":"Commerce","G06":"Telecom",
+      "G07":"Quantum","G08":"Compute","G09":"AI","G10":"Media","G11":"Devices","G12":"Data",
+      "G13":"Security","G14":"Developer","G15":"Marketplace","G16":"Treasury","G17":"Access",
+      "G18":"Infrastructure","G19":"Audit","G20":"Recovery","G21":"Compliance","G22":"Release"
+    },
+    "triad_mapping":"Each applicable gate exposes three logical states: Yin authorization, Yang execution, Yong synchronization/reconciliation. Gate approval remains independent."
+  },
+  "universal_placement":{
+    "principle":"Reusable architecture package across applicable OEQL/StellarNet/Poinhi interfaces and services.",
+    "copy_policy":"Copies inherit the same schema and fail-closed rules but maintain independent runtime state and credentials.",
+    "surfaces":["web","mobile","API","marketplace","telecom","compute","AI","media","device","data","treasury","developer"],
+    "render":"dual spiral Yin/Yang fields with a central Yong reconciliation orbit",
+    "accessibility":"text status, reduced motion, deterministic state indicators"
+  },
+  "security":{
+    "fail_closed":true,
+    "no_private_keys_client_side":true,
+    "no_claim_of_onchain_activation_without_receipt":true,
+    "independent_gate_evaluation":true
+  },
+  "activation":{
+    "architecture":"READY",
+    "runtime_token_bindings":"PENDING_LIVE_VERIFICATION",
+    "POINHI_contract":"UNVERIFIED",
+    "physical_quantum_claim":"NONE"
+  }
+}
