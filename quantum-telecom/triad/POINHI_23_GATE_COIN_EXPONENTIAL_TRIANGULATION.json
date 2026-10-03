@@ -1,0 +1,314 @@
+{
+  "version": "POINHI-23-GATE-COIN-EXPONENTIAL-TRIANGULATION",
+  "status": "LOGICAL_ARCHITECTURE_DEPLOYED_NOT_ONCHAIN_LAUNCHED",
+  "chain": {
+    "name": "Base Mainnet",
+    "chainId": 8453
+  },
+  "premise": "Each POINHI gate is a logical coin root. Every YIN, YANG, and YONG branch triangulates into another YIN/YANG/YONG triad recursively, producing an exponential software topology.",
+  "gates": [
+    {
+      "gate": 1,
+      "name": "Identity",
+      "coinRoot": "G01",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 2,
+      "name": "POINHI Holder",
+      "coinRoot": "G02",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 3,
+      "name": "NFTQR",
+      "coinRoot": "G03",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 4,
+      "name": "Payments",
+      "coinRoot": "G04",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 5,
+      "name": "Commerce",
+      "coinRoot": "G05",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 6,
+      "name": "Telecom",
+      "coinRoot": "G06",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 7,
+      "name": "Quantum",
+      "coinRoot": "G07",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 8,
+      "name": "Compute",
+      "coinRoot": "G08",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 9,
+      "name": "AI",
+      "coinRoot": "G09",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 10,
+      "name": "Media",
+      "coinRoot": "G10",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 11,
+      "name": "Devices",
+      "coinRoot": "G11",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 12,
+      "name": "Data",
+      "coinRoot": "G12",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 13,
+      "name": "Security",
+      "coinRoot": "G13",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 14,
+      "name": "Developer",
+      "coinRoot": "G14",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 15,
+      "name": "Marketplace",
+      "coinRoot": "G15",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 16,
+      "name": "Treasury",
+      "coinRoot": "G16",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 17,
+      "name": "Access",
+      "coinRoot": "G17",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 18,
+      "name": "Infrastructure",
+      "coinRoot": "G18",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 19,
+      "name": "Audit",
+      "coinRoot": "G19",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 20,
+      "name": "Recovery",
+      "coinRoot": "G20",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 21,
+      "name": "Compliance",
+      "coinRoot": "G21",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 22,
+      "name": "Release",
+      "coinRoot": "G22",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    },
+    {
+      "gate": 23,
+      "name": "Universal Reach & Reconciliation",
+      "coinRoot": "G23",
+      "triad": [
+        "YIN",
+        "YANG",
+        "YONG"
+      ],
+      "harmony": "YIN↔YANG↔YONG→HARMONY→next recursion"
+    }
+  ],
+  "recursion": {
+    "rule": "For depth d, each node branches into YIN/YANG/YONG; nodes at depth d per root = 3^d; cumulative nodes through depth d = (3^(d+1)-1)/2.",
+    "recurrence": "T(d+1)=3*T(d)",
+    "paths": "Every finite path is uniquely labeled by a sequence over {YIN,YANG,YONG}.",
+    "termination": "Conceptually unbounded; runtime materialization is bounded by configured depth, storage, compute, rate limits, and safety controls.",
+    "no_physical_claim": "Software/control-plane topology only; no claim of physical quantum recursion, infinite bandwidth, or physical multiverse propagation."
+  },
+  "attribution": {
+    "root": "Each of the 23 POINHI gates owns one logical coin root.",
+    "lanes": "Each root has YIN, YANG, YONG lanes.",
+    "harmony": "Each triad has an independently addressable logical harmony state.",
+    "descendants": "Every descendant retains its full ancestry path.",
+    "invariant": "Triangulation creates logical references, not duplicate token balances. The logical one-token model remains one token unless actual onchain issuance or transfer changes supply."
+  },
+  "bankr": {
+    "integration": "Bankr launch/quote control plane",
+    "chain": "Base",
+    "quote_resolution": "Resolve Bankr's current quote registry before any launch.",
+    "actual_launches": "NONE performed by this architecture commit.",
+    "write_requirements": "Actual deployment requires authenticated write-capable Bankr API credentials; Bankr currently documents up to three counted launch attempts per wallet per rolling 24 hours.",
+    "current_base_fixed_quotes": [
+      "BNKR",
+      "ba3Pump",
+      "cbHYPE",
+      "cbZEC",
+      "TAO"
+    ]
+  },
+  "quantum_gate": {
+    "role": "Software quantum-gate abstraction for orchestration, verification, sensing/control interfaces, and reconciliation.",
+    "physical_quantum_claim": "NONE",
+    "radio": "Recursive control-plane model for quantum-radio research interfaces; physical capabilities require real hardware and measurement validation."
+  },
+  "safety": {
+    "fail_closed": true,
+    "unknown_state": "PENDING",
+    "no_fabricated_tx": true,
+    "no_private_keys_in_repo": true,
+    "blank_screen_recovery": "status/recovery UI"
+  },
+  "example_paths": [
+    "G01/YIN",
+    "G01/YANG",
+    "G01/YONG",
+    "G01/YIN/YIN",
+    "G01/YIN/YANG",
+    "G01/YIN/YONG",
+    "G07/YONG/YANG/YIN",
+    "G23/YIN/YONG/YANG/YONG"
+  ]
+}
