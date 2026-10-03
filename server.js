@@ -499,6 +499,70 @@ app.get("/api/treasury/transactions", async (_req,res)=>{
   try{res.json(await stripe.rawRequest("GET","/v2/money_management/transactions"))}
   catch(e){res.status(502).json({error:"treasury_unavailable",detail:e.message});}
 });
+
+// POINHI / NFTQR v12 token-gating control plane.
+// Fail closed until the post-launch contract addresses are configured in Render.
+// No token address is invented or inferred.
+const POINHI_GATE = {
+  chainId: 8453,
+  tokenAddress: process.env.POINHI_TOKEN_ADDRESS || null,
+  minBalanceBaseUnits: process.env.POINHI_MIN_BALANCE_BASE_UNITS || "0",
+  nftqrContractAddress: process.env.NFTQR_V1_CONTRACT_ADDRESS || null,
+  nftqrHealthUrl: process.env.NFTQR_HEALTH_URL || "https://stellarnet-nftqr.onrender.com/health",
+  nftqrPublicUrl: process.env.NFTQR_PUBLIC_URL || "https://stellarnet-nftqr.onrender.com",
+  upstreamApi: "https://oeql-quantum-telecom-api.onrender.com",
+  version: "v12"
+};
+async function baseRpc(method, params) {
+  const rpc = process.env.BASE_RPC_URL || "https://mainnet.base.org";
+  const r = await fetch(rpc,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({jsonrpc:"2.0",id:1,method,params})});
+  const j = await r.json();
+  if(!r.ok || j.error) throw new Error(j?.error?.message || "Base RPC error");
+  return j.result;
+}
+function abiWordAddress(a){ return String(a).toLowerCase().replace(/^0x/,"").padStart(64,"0"); }
+async function erc20Balance(token,owner){
+  const data="0x70a08231"+abiWordAddress(owner);
+  return BigInt(await baseRpc("eth_call",[{"to":token,"data},"latest"]));
+}
+async function erc721Balance(token,owner){
+  const data="0x70a08231"+abiWordAddress(owner);
+  return BigInt(await baseRpc("eth_call",[{"to":token,"data},"latest"]));
+}
+async function nftqrHealth(){
+  try {
+    const r=await fetch(POINHI_GATE.nftqrHealthUrl,{headers:{"accept":"application/json"},signal:AbortSignal.timeout(5000)});
+    const j=await r.json();
+    return {ok:r.ok && j?.ok===true, status:r.status, data:j};
+  } catch(e) { return {ok:false,error:e.message}; }
+}
+app.get("/api/v12/config",(_req,res)=>res.json({
+  version:POINHI_GATE.version, chain:"Base Mainnet", chainId:POINHI_GATE.chainId,
+  tokenGate:{configured:!!POINHI_GATE.tokenAddress,minBalanceConfigured:POINHI_GATE.minBalanceBaseUnits!=="0",tokenAddress:POINHI_GATE.tokenAddress},
+  nftqrGate:{configured:!!POINHI_GATE.nftqrContractAddress,contractAddress:POINHI_GATE.nftqrContractAddress},
+  links:{nftqr:POINHI_GATE.nftqrPublicUrl,terminalCheckout:POINHI_GATE.upstreamApi},
+  launchState:POINHI_GATE.tokenAddress?"POST_LAUNCH_CONFIGURED":"AWAITING_POINHI_CONTRACT"
+}));
+app.get("/api/v12/health",async(_req,res)=>{
+  const n=await nftqrHealth();
+  res.json({ok:n.ok,version:"v12",base:{chainId:8453},nftqr:n,tokenGateConfigured:!!POINHI_GATE.tokenAddress,nftqrGateConfigured:!!POINHI_GATE.nftqrContractAddress});
+});
+app.get("/api/v12/gate",async(req,res)=>{
+  const address=String(req.query.address||"").trim();
+  if(!/^0x[a-fA-F0-9]{40}$/.test(address)) return res.status(400).json({error:"valid EVM wallet address required"});
+  if(!POINHI_GATE.tokenAddress && !POINHI_GATE.nftqrContractAddress) return res.status(503).json({error:"token_gate_not_configured",status:"AWAITING_POST_LAUNCH_CONTRACTS"});
+  try {
+    const [tokenBalance,nftBalance,health]=await Promise.all([
+      POINHI_GATE.tokenAddress?erc20Balance(POINHI_GATE.tokenAddress,address):Promise.resolve(0n),
+      POINHI_GATE.nftqrContractAddress?erc721Balance(POINHI_GATE.nftqrContractAddress,address):Promise.resolve(0n),
+      nftqrHealth()
+    ]);
+    const tokenPass=POINHI_GATE.tokenAddress && tokenBalance>=BigInt(POINHI_GATE.minBalanceBaseUnits);
+    const nftPass=POINHI_GATE.nftqrContractAddress && nftBalance>0n;
+    res.json({allowed:!!(tokenPass||nftPass),chainId:8453,address,token:{configured:!!POINHI_GATE.tokenAddress,balance:tokenBalance.toString(),minimum:POINHI_GATE.minBalanceBaseUnits},nftqr:{configured:!!POINHI_GATE.nftqrContractAddress,balance:nftBalance.toString()},nftqrHealth:health,access:["quantum-dispersal-routing","dimension-gate-switching","multiverse-timeline-telemetry"]});
+  } catch(e) { res.status(502).json({error:"gate_check_failed",message:e.message}); }
+});
+
 app.get("/api/identity", (_req,res)=>res.json({
   namespace:"oeql://.forever",https_canonical:"https://oeql.onrender.com/",
   note:"oeql is an application namespace; HTTPS is the public transport fallback."
