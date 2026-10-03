@@ -1,0 +1,30 @@
+{
+  "version": "2026-10-03",
+  "status": "logical_control_plane_ready_not_onchain_launched",
+  "chainId": 8453,
+  "creator": "0x13653b6b8bd4b274da565faf6fa894e3418a6d10",
+  "gates": 23,
+  "triadLanes": 69,
+  "recursion": {
+    "branchFactor": 3,
+    "boundedRuntimeDepth": 12,
+    "pathAlphabet": [
+      "YIN",
+      "YANG",
+      "YONG"
+    ]
+  },
+  "readForms": [
+    "UTC timestamp",
+    "gate/path",
+    "revision",
+    "software dimension flag",
+    "verification state"
+  ],
+  "stamps": {
+    "local": true,
+    "onchain": false,
+    "rule": "onchain=true only after wallet signing, broadcast and verified receipt"
+  },
+  "quantumBoundary": "harmonic quantum-radio and resonance terms are software/research abstractions; no physical limitless bandwidth, extra-dimensional transport, or entanglement is claimed"
+}
