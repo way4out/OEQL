@@ -1,0 +1,88 @@
+{
+  "version": "v12",
+  "network": {
+    "name": "Base Mainnet",
+    "chainId": 8453
+  },
+  "token": {
+    "name": "POINHI",
+    "symbol": "PoinH.i.ntelifent",
+    "standard": "ERC-20",
+    "supply": "100000000000",
+    "fixedSupply": true
+  },
+  "launch": {
+    "provider": "Bankr Token Launch API",
+    "target": "base",
+    "pool": "Uniswap v4 / Bankr launch provider",
+    "swapFeeBps": 70,
+    "creatorFeeShareOfPoolPortionBps": 9500,
+    "creatorFeeAddress": "0x13653b6b8bd4b274da565faf6fa894e3418a6d10",
+    "devBuy": "0",
+    "gasSponsorship": "Base launch subject to Bankr eligibility"
+  },
+  "vesting": {
+    "defaultCreatorPercent": 15,
+    "duration": "1 year",
+    "cliff": "30 days",
+    "disableOption": true
+  },
+  "gates": {
+    "accepted": [
+      "POINHI minimum balance",
+      "NFTQR v1.0 ownership"
+    ],
+    "requiredContracts": [
+      "POINHI_TOKEN_ADDRESS",
+      "NFTQR_V1_CONTRACT_ADDRESS"
+    ]
+  },
+  "services": {
+    "nftqrPublic": "https://stellarnet-nftqr.onrender.com",
+    "nftqrHealth": "https://stellarnet-nftqr.onrender.com/health",
+    "upstreamApi": "https://oeql-quantum-telecom-api.onrender.com"
+  },
+  "basenames": {
+    "parent": "stellarnet.base.eth",
+    "subnames": [
+      "nftqr",
+      "oeql",
+      "4out",
+      "forever",
+      "identity",
+      "payments",
+      "commerce",
+      "telecom",
+      "quantum",
+      "compute",
+      "ai",
+      "media",
+      "devices",
+      "data",
+      "security",
+      "developer",
+      "marketplace",
+      "treasury",
+      "access",
+      "infrastructure"
+    ],
+    "registrationStatus": "NOT_EXECUTED"
+  },
+  "executionOrder": [
+    "BANKR_SIMULATE_POINHI",
+    "BANKR_BROADCAST_POINHI",
+    "CAPTURE_TOKEN_ADDRESS_AND_TX",
+    "CONFIGURE_RENDER_TOKEN_GATE",
+    "DEPLOY_OEQL_V12",
+    "VERIFY_NFTQR_HEALTH",
+    "REGISTER_BASENAME_PARENT",
+    "SET_REVERSE_FORWARD",
+    "REGISTER_SUBNAMES",
+    "VERIFY_ALL_PUBLIC_LINKS"
+  ],
+  "safety": {
+    "noInventedTokenAddress": true,
+    "noClaimWithoutTxHash": true,
+    "basenameOwnershipRequiresOnchainRegistration": true
+  }
+}
