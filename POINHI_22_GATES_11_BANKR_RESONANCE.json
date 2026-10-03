@@ -1,0 +1,58 @@
+{
+  "version":"POINHI-22-GATE-11-OF-23-BANKR-RESONANCE",
+  "chain":{"name":"Base Mainnet","chainId":8453},
+  "status":"ARCHITECTURE_COMMITTED_NOT_ONCHAIN_ACTIVATED",
+  "bankr_policy":"Use only the live Bankr token registry/portfolio at runtime; do not hard-code an asserted 23-token inventory.",
+  "bankr_current_documented_base_quote_tokens":[
+    {"symbol":"BNKR","address":"0x22af33fe49fd1fa80c7149773dde5890d3c76f3b"},
+    {"symbol":"ba3Pump","address":"0x5577a294ae5a21446a11b0e4100ca83803995720"},
+    {"symbol":"cbHYPE","address":"0xB200000000000000000000451d033a5000cb479e"},
+    {"symbol":"cbZEC","address":"0xB2000000000000000000008501b13360000cb2EC"},
+    {"symbol":"TAO","address":"0xf3081494b87e8d5fb7960f066e931d1d0e6e3d67"}
+  ],
+  "resonance_model":{
+    "mode":"software visualization/control-plane only",
+    "yin":"inbound/observe/settle",
+    "yang":"outbound/execute/route",
+    "swirl":"bidirectional state visualization around the gate graph",
+    "double":"two synchronized render channels per gate: authorization + execution",
+    "entanglement_claim":"visual/logical synchronization only; not a claim of physical quantum entanglement"
+  },
+  "eleven_token_lanes":{
+    "rule":"11 active lanes may be mapped dynamically from the verified live Bankr asset set; remaining lanes stay unbound until verified.",
+    "lane_policy":"Each lane references a token contract, chain, symbol, decimals, price source, liquidity status, and timestamp. Missing proof disables the lane."
+  },
+  "twenty_two_gates":{
+    "G01":"Identity","G02":"POINHI Holder","G03":"NFTQR","G04":"Payments","G05":"Commerce","G06":"Telecom",
+    "G07":"Quantum","G08":"Compute","G09":"AI","G10":"Media","G11":"Devices","G12":"Data",
+    "G13":"Security","G14":"Developer","G15":"Marketplace","G16":"Treasury","G17":"Access",
+    "G18":"Infrastructure","G19":"Audit","G20":"Recovery","G21":"Compliance","G22":"Release"
+  },
+  "mapping":{
+    "11_lanes_to_22_gates":"one lane may represent an inbound/outbound pair of gates, but authorization remains independently evaluated at every gate",
+    "POINHI":"primary entitlement token only after verified contract configuration",
+    "NFTQR":"alternate entitlement proof only after verified contract configuration"
+  },
+  "runtime":{
+    "live_registry_source":"Bankr quote-token/portfolio endpoints where authenticated access is available",
+    "price_rule":"display current verified quote with timestamp; never fabricate market price",
+    "transaction_rule":"verify chain, token contract, recipient, amount, nonce/receipt and final order state",
+    "fail_closed":true
+  },
+  "render_spec":{
+    "canvas":"dual-channel responsive renderer",
+    "geometry":"two opposing spiral fields around a 22-node gate ring",
+    "yin_channel":"authorization/state intake",
+    "yang_channel":"execution/settlement output",
+    "animation":"deterministic phase rotation driven by verified state changes",
+    "accessibility":"reduced-motion mode and text-only gate status",
+    "no_physical_quantum_claim":true
+  },
+  "release":{
+    "architecture":"READY",
+    "token_contract":"UNVERIFIED",
+    "11_bankr_lanes":"DYNAMIC_RUNTIME_BINDING_REQUIRED",
+    "22_gate_runtime":"DEFINED",
+    "onchain_activation":"BLOCKED_UNTIL_TRANSACTION_PROOFS"
+  }
+}
