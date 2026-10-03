@@ -1,0 +1,67 @@
+{
+  "version": "POINHI-FULL-22-GATE-ARCHITECTURE",
+  "network": {"name":"Base Mainnet","chainId":8453},
+  "asset": {"name":"POINHI","symbol":"PoinH.i.ntelifent","standard":"ERC-20","supply":"100000000000","fixedSupply":true},
+  "authority": {"gateController":"0x13653b6b8bd4b274da565faf6fa894e3418a6d10","policy":"fail-closed-until-onchain-contracts-and-receipts-are-verified"},
+  "gate_model": {
+    "principle":"Each gate is independently addressable, observable, and fail-closed; one gate must not silently grant another.",
+    "proofs":["wallet signature","chainId=8453","contract address","balance/ownership proof where applicable","transaction receipt for state-changing actions"],
+    "payment":"No payment is considered complete until the intended ERC-20 transfer and receipt are verified on Base.",
+    "security":"No private keys in frontend, repository, or client-side environment."
+  },
+  "gates": [
+    {"id":"G01","name":"Identity","scope":"wallet/session identity","proof":"connected wallet + signed challenge"},
+    {"id":"G02","name":"POINHI Holder","scope":"POINHI balance access","proof":"verified ERC-20 balance against configured token contract"},
+    {"id":"G03","name":"NFTQR","scope":"NFTQR v1 ownership access","proof":"verified ERC-721 balance against configured NFTQR contract"},
+    {"id":"G04","name":"Payments","scope":"Base payment authorization","proof":"amount, token contract, recipient, chain and receipt"},
+    {"id":"G05","name":"Commerce","scope":"marketplace purchase state","proof":"listing snapshot + authorized payment receipt + order state"},
+    {"id":"G06","name":"Telecom","scope":"SIM/eSIM/service entitlement","proof":"paid order receipt + provider fulfillment state"},
+    {"id":"G07","name":"Quantum","scope":"quantum-service control plane","proof":"authenticated session + service entitlement"},
+    {"id":"G08","name":"Compute","scope":"compute/render capacity","proof":"account entitlement + metered authorization"},
+    {"id":"G09","name":"AI","scope":"AI services","proof":"authenticated entitlement + policy check"},
+    {"id":"G10","name":"Media","scope":"media creation/storage","proof":"authenticated entitlement + object ownership"},
+    {"id":"G11","name":"Devices","scope":"device registration/control","proof":"device identity + signed enrollment"},
+    {"id":"G12","name":"Data","scope":"data vault/storage","proof":"authenticated identity + authorization policy"},
+    {"id":"G13","name":"Security","scope":"security center/risk controls","proof":"authenticated identity + policy evaluation"},
+    {"id":"G14","name":"Developer","scope":"developer/API access","proof":"scoped credential + rate/policy checks"},
+    {"id":"G15","name":"Marketplace","scope":"listing/post/sell capabilities","proof":"seller authorization + listing validation"},
+    {"id":"G16","name":"Treasury","scope":"treasury/account visibility","proof":"authenticated account + role authorization"},
+    {"id":"G17","name":"Access","scope":"cross-service entitlement","proof":"central policy decision with explicit gate dependencies"},
+    {"id":"G18","name":"Infrastructure","scope":"service health/routing","proof":"service health + configuration validation"},
+    {"id":"G19","name":"Audit","scope":"immutable event/audit trail","proof":"event ID + timestamp + actor + action result"},
+    {"id":"G20","name":"Recovery","scope":"recovery and emergency controls","proof":"step-up authentication + recovery policy"},
+    {"id":"G21","name":"Compliance","scope":"jurisdiction-sensitive features","proof":"required disclosures/verification before activation"},
+    {"id":"G22","name":"Release","scope":"production release gate","proof":"all required checks pass; no unverified claims"}
+  ],
+  "dependency_policy": {
+    "root": "G01",
+    "POINHI_required_for":["G02","G07","G08","G09","G10","G12","G14","G16","G17"],
+    "NFTQR_or_POINHI_accepted_for":["G17"],
+    "payment_required_for":["G05","G06"],
+    "security_required_for":["G07","G08","G09","G10","G11","G12","G14","G16","G17","G18","G19","G20","G21","G22"],
+    "release_requires_all":"G01-G22 verified according to each gate's proof contract"
+  },
+  "runtime_routes": {
+    "config":"/api/v12/config",
+    "health":"/api/v12/health",
+    "gate":"/api/v12/gate?address=<wallet>",
+    "payment":"Base ERC-20 transfer + receipt verification",
+    "audit":"append-only event records"
+  },
+  "onchain_launch": {
+    "provider":"Bankr Token Launch API",
+    "target":"base",
+    "swapFeeBps":70,
+    "creatorFeeShareOfPoolPortionBps":9500,
+    "devBuy":"0",
+    "gasSponsorship":"subject to Bankr eligibility"
+  },
+  "verification_status": {
+    "POINHI_contract":"NOT_DEPLOYED_OR_UNVERIFIED",
+    "NFTQR_contract":"NOT_CONFIGURED_IN_THIS_MANIFEST",
+    "basename_registration":"NOT_EXECUTED",
+    "22_gate_architecture":"DEFINED",
+    "production_release":"BLOCKED_UNTIL_ONCHAIN_PROOFS"
+  },
+  "release_rule":"Never label POINHI deployed, paid, gated, verified, or production-live without corresponding onchain/service evidence."
+}
