@@ -1,0 +1,64 @@
+{
+  "version": "POINHI-22-GATE-YIN-YANG-YONG-FRACTIONAL-DISPERSION",
+  "status": "ARCHITECTURE_READY_NOT_ONCHAIN_TRANSFERRED",
+  "purpose": "Logical dispersion map for one token unit across StellarNet/OEQL systemic subcategories.",
+  "token": {
+    "asset": "ANY_VERIFIED_TOKEN",
+    "total_logical_amount": "1.0 token",
+    "actual_contract": null,
+    "actual_transfer_tx": null,
+    "rule": "No real token transfer or quantum dispersal is claimed until a verified token contract, wallet authorization, recipient set, and transaction receipt exist."
+  },
+  "triad": {
+    "yin": "inbound/observe/authorize",
+    "yang": "outbound/execute/settle",
+    "yong": "bridge/synchronize/reconcile",
+    "physical_quantum_claim": "NONE",
+    "quantum_language": "fractional dispersion is a software allocation/replication model, not physical quantum teleportation or entanglement."
+  },
+  "allocation": {
+    "gate_count": 22,
+    "per_gate": "1/22 token",
+    "per_triad_lane": "1/66 token",
+    "total": "66 x (1/66) = 1 token",
+    "rounding": "Use integer base units for an actual token implementation; never round away residual value. Residual remains in a reconciliation bucket."
+  },
+  "gates": {
+    "G01":"Identity","G02":"POINHI Holder","G03":"NFTQR","G04":"Payments","G05":"Commerce","G06":"Telecom",
+    "G07":"Quantum","G08":"Compute","G09":"AI","G10":"Media","G11":"Devices","G12":"Data",
+    "G13":"Security","G14":"Developer","G15":"Marketplace","G16":"Treasury","G17":"Access",
+    "G18":"Infrastructure","G19":"Audit","G20":"Recovery","G21":"Compliance","G22":"Release"
+  },
+  "farthest_reach_model": {
+    "objective": "Cover the widest applicable set of StellarNet online data/system surfaces without implying physical-space distribution.",
+    "placement_dimensions": [
+      "web","mobile","API","marketplace","telecom","compute","AI","media","device","data","treasury","developer",
+      "identity","payments","commerce","security","audit","recovery","compliance","release"
+    ],
+    "replication_policy": "Each applicable surface receives a logical reference to the same allocation ledger; balances are not duplicated on-chain.",
+    "data_point_policy": "Enumerate discovered endpoints/components at runtime and attach gate + triad references. Unknown or unverified points remain PENDING.",
+    "fail_closed": true
+  },
+  "reconciliation": {
+    "yong_role": "Reconcile all logical allocations back to exactly 1 token unit.",
+    "invariant": "sum(all gate allocations) == 1 token",
+    "double_counting": "Forbidden",
+    "unverified_surfaces": "Do not assign spendable balances; attach references only.",
+    "residual_bucket": "Any integer rounding residual remains held in the reconciliation bucket until explicitly resolved."
+  },
+  "implementation": {
+    "required_for_real_transfer": [
+      "verified token contract and decimals",
+      "authorized wallet or custody mechanism",
+      "explicit recipient/allocation policy",
+      "on-chain transaction",
+      "receipt and post-transfer balance verification"
+    ],
+    "security": [
+      "no private keys client-side",
+      "no fabricated token address",
+      "no fabricated transaction hash",
+      "no claim of completion without receipt"
+    ]
+  }
+}
