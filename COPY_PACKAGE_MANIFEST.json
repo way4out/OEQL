@@ -1,0 +1,25 @@
+{
+  "schema": "stellarnet.copy-package.v1",
+  "package_id": "telecom-copy",
+  "name": "Quantum Telecom Data Package",
+  "chain": "base",
+  "processor": "BANKR",
+  "rights": "single_download_copy_right",
+  "download_policy": "one verified paid entitlement -> one single-use download token",
+  "scope": [
+    "telecom service catalog",
+    "configuration",
+    "package metadata",
+    "recreation manifest"
+  ],
+  "onchain_status": "integration-ready; broadcast requires server-side BANKR write credentials",
+  "simulator_package": {
+    "id": "simulator-copy",
+    "scope": [
+      "simulator routes",
+      "configuration",
+      "package metadata",
+      "recreation manifest"
+    ]
+  }
+}
